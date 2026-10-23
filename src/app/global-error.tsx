@@ -12,7 +12,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="zh-CN">
+    <html lang="en">
       <body
         style={{
           margin: 0,
@@ -29,7 +29,7 @@ export default function GlobalError({
           padding: 16,
         }}
       >
-        <p style={{ margin: 0, fontSize: 14 }}>应用发生严重错误，请刷新页面重试。</p>
+        <p style={{ margin: 0, fontSize: 14 }}>A serious error occurred. Refresh the page and try again.</p>
         <button
           onClick={reset}
           style={{
@@ -41,11 +41,11 @@ export default function GlobalError({
             cursor: 'pointer',
           }}
         >
-          刷新
+          Refresh
         </button>
         {/* digest 用于线上日志定位，不含敏感信息，展示无妨 */}
         {error.digest && (
-          <p style={{ margin: 0, fontSize: 11, color: '#6b7f99' }}>错误编号：{error.digest}</p>
+          <p style={{ margin: 0, fontSize: 11, color: '#6b7f99' }}>Error ID: {error.digest}</p>
         )}
       </body>
     </html>

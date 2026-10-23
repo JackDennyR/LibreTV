@@ -29,7 +29,7 @@ export interface LiveProbeResult {
   error?: string;
   /** master playlist 的 CODECS，用于前端提示 H.265 等不可解码情况 */
   codec?: string;
-  /** 因超时失败：源可能只是慢，前端以琥珀色区分于真正的不可达 */
+  /** 因TimeoutFailed：源可能只是慢，前端以琥珀色区分于真正的不可达 */
   timedOut?: boolean;
   /** 分片吞吐估算（kbps）：低于阈值的源前端标记为「源限速」 */
   kbps?: number;
@@ -52,13 +52,13 @@ function throwForAuthStatus(res: Response): void {
   }
   if (res.status === 503) {
     window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT, { detail: 'setup' }));
-    throw new ApiError('服务器未配置密码', 503);
+    throw new ApiError('Server password is not configured', 503);
   }
 }
 
 /** NDJSON 流读取：按行解析 JSON 并回调，坏行跳过不影响其余结果 */
 async function consumeNdjson<T>(res: Response, onEvent: (event: T) => void): Promise<void> {
-  if (!res.body) throw new ApiError(`请求失败 (${res.status})`, res.status);
+  if (!res.body) throw new ApiError(`Request failed (${res.status})`, res.status);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -91,15 +91,15 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     res = await fetch(url, init);
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err;
-    throw new ApiError('网络请求失败，请检查网络连接', 0);
+    throw new ApiError('Network request failed. Check your connection.', 0);
   }
   throwForAuthStatus(res);
   if (!res.ok) {
-    let msg = `请求失败 (${res.status})`;
+    let msg = `Request failed (${res.status})`;
     try {
       const data = (await res.json()) as { error?: string };
       if (data?.error) msg = data.error;
-    } catch { /* 忽略解析失败 */ }
+    } catch { /* 忽略解析Failed */ }
     throw new ApiError(msg, res.status);
   }
   return (await res.json()) as T;
@@ -119,7 +119,7 @@ export const api = {
 
   /**
    * 聚合搜索。传入 onSource 时走 /api/search?stream=1 的 NDJSON 流：
-   * 每个源结算立即回调（健康源结果不再等坏源超时），最终以聚合结果 resolve。
+   * 每个源结算立即回调（健康源结果不再等坏源Timeout），最终以聚合结果 resolve。
    * 未传 onSource 或流不可用时回退为一次性 JSON 请求。
    */
   search: async (
@@ -148,10 +148,10 @@ export const api = {
 
   /**
    * 批量画质探测（NDJSON 流式）：展开来源面板时逐条回调，先到的源先显示画质。
-   * 结果里的 height 缺失代表「测不出」（单码率 m3u8 / 直链 / 防盗链），不是失败。
+   * 结果里的 height 缺失代表「测不出」（单码率 m3u8 / 直链 / 防盗链），不是Failed。
    *
-   * 传输层失败（请求没发出去 / 流中途断开）不再原样冒泡：调用方原先只能静默成
-   * 「未测到」，线上出问题时无法区分「网关拦了」「容器崩了」「探测本身失败」。
+   * 传输层Failed（请求没发出去 / 流中途断开）不再原样冒泡：调用方原先只能静默成
+   * 「未测到」，线上出问题时无法区分「网关拦了」「容器崩了」「探测本身Failed」。
    * 服务端开流即写一行心跳，收到过首字节说明请求确实进了应用，据此给出不同文案。
    */
   qualityProbeStream: async (
@@ -169,15 +169,15 @@ export const api = {
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') throw err;
-      throw new ApiError('探测请求没能送达服务器（网络或反向代理中断）', 0);
+      throw new ApiError('Availability check could not reach the server (network or proxy failure)', 0);
     }
     throwForAuthStatus(res);
-    if (!res.ok || !res.body) throw new ApiError(`请求失败 (${res.status})`, res.status);
+    if (!res.ok || !res.body) throw new ApiError(`Request failed (${res.status})`, res.status);
 
     let firstByte = false;
     try {
       await consumeNdjson<QualityProbeResult | { ping: true }>(res, (event) => {
-        // 心跳行不是结果：收到它就证明请求确实进了 Next，后面的失败才归因于探测本身
+        // 心跳行不是结果：收到它就证明请求确实进了 Next，后面的Failed才归因于探测本身
         if ('ping' in event) {
           firstByte = true;
           return;
@@ -189,8 +189,8 @@ export const api = {
       if (err instanceof DOMException && err.name === 'AbortError') throw err;
       throw new ApiError(
         firstByte
-          ? '探测连接中途被断开（已收到部分结果，多为网关超时）'
-          : '探测请求被网关拦截（未收到任何响应）',
+          ? 'Availability check disconnected after receiving partial results'
+          : 'Availability check was blocked by the gateway',
         0
       );
     }
@@ -217,7 +217,7 @@ export const api = {
       const detail = await api.detail(id, source, signal);
       return { ok: true, ms: Math.round(performance.now() - start), detail };
     } catch (err) {
-      return { ok: false, ms: Math.round(performance.now() - start), detail: undefined as VideoDetail | undefined, error: err instanceof Error ? err.message : '失败' };
+      return { ok: false, ms: Math.round(performance.now() - start), detail: undefined as VideoDetail | undefined, error: err instanceof Error ? err.message : 'Failed' };
     }
   },
 
@@ -270,7 +270,7 @@ export const api = {
       const playlist = await api.livePlaylist(url, true);
       return { ok: true, ms: Math.round(performance.now() - start), count: playlist.channels.length, error: undefined as string | undefined };
     } catch (err) {
-      return { ok: false, ms: Math.round(performance.now() - start), count: 0, error: err instanceof Error ? err.message : '失败' };
+      return { ok: false, ms: Math.round(performance.now() - start), count: 0, error: err instanceof Error ? err.message : 'Failed' };
     }
   },
 
@@ -308,7 +308,7 @@ export const api = {
       signal,
     });
     throwForAuthStatus(res);
-    if (!res.ok || !res.body) throw new ApiError(`请求失败 (${res.status})`, res.status);
+    if (!res.ok || !res.body) throw new ApiError(`Request failed (${res.status})`, res.status);
 
     await consumeNdjson<LiveProbeResult>(res, onResult);
   },
@@ -335,7 +335,7 @@ async function searchStream(
     signal,
   });
     throwForAuthStatus(res);
-    if (!res.ok || !res.body) throw new ApiError(`请求失败 (${res.status})`, res.status);
+    if (!res.ok || !res.body) throw new ApiError(`Request failed (${res.status})`, res.status);
 
     // done 事件缺失（流被截断）时退化为空结果，不让整次搜索报错
     let final: SearchResponse = { list: [], failures: [] };

@@ -221,13 +221,13 @@ export class VideoPrefetcher {
         cached: 0,
         total: 0,
         bytes: 0,
-        message: err instanceof Error ? err.message : 'm3u8 解析失败',
+        message: err instanceof Error ? err.message : 'Failed to parse m3u8 playlist',
       });
       return;
     }
     if (generation !== this.generation) return;
     if (parsed.byterange) {
-      this.setState({ state: 'error', cached: 0, total: 0, bytes: 0, message: '该集使用 BYTERANGE 分片，不支持本地缓存' });
+      this.setState({ state: 'error', cached: 0, total: 0, bytes: 0, message: 'This episode uses BYTERANGE segments, which cannot be cached locally.' });
       return;
     }
 
@@ -287,7 +287,7 @@ export class VideoPrefetcher {
             bytes += buffer.byteLength;
             this.setState({ state: 'running', cached, total: taskQueue.length, bytes });
           } else if (result === 'quota') {
-            this.setState({ state: 'done', cached, total: taskQueue.length, bytes, message: '存储空间已满，已停止预取' });
+            this.setState({ state: 'done', cached, total: taskQueue.length, bytes, message: 'Storage is full. Prefetching has stopped.' });
             this.generation += 1; // 终止其他 worker
             return;
           }
@@ -310,7 +310,7 @@ export class VideoPrefetcher {
       cached,
       total: taskQueue.length,
       bytes,
-      message: cached < taskQueue.length ? '部分分片未缓存（源不可达或存储受限）' : undefined,
+      message: cached < taskQueue.length ? 'Some segments were not cached (source unavailable or storage limited).' : undefined,
     });
   }
 }

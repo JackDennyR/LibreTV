@@ -45,7 +45,7 @@ interface LivePlayerProps {
   /** 上游直播流地址（直连优先，失败自动走代理） */
   url: string;
   title: string;
-  /** 上一台/下一台：传入时注册为播放器控制条按钮（全屏内也可操作） */
+  /** Previous Channel/Next Channel：传入时注册为播放器控制条按钮（全屏内也可操作） */
   onPrevChannel?: () => void;
   onNextChannel?: () => void;
 }
@@ -129,11 +129,11 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
         nativeCleanup = null;
         if (disposed || destroyed) return;
         if (allowProxyFallback && !mediaUrl.startsWith(STREAM_PROXY_PREFIX)) {
-          showHint('直连失败，改用代理重试...');
+          showHint('Direct playback failed. Retrying through the proxy...');
           setupNative(video, proxyUrl(url), false, failMessage);
           return;
         }
-        setError(failMessage || '该地址不是可播放的直播流（内容可能是文件或错误提示）');
+        setError(failMessage || 'This URL does not contain a playable live stream.');
       };
       video.addEventListener('error', onError);
       nativeCleanup = () => video.removeEventListener('error', onError);
@@ -170,7 +170,7 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
         if (/hvc1|hev1|hevc/i.test(videoCodecs)) {
           const support = video.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"');
           if (!support) {
-            showHint('该频道为 H.265 编码，当前浏览器可能无法解码，建议用 Edge/Safari');
+            showHint('This channel uses H.265, which may not be supported by this browser. Try Edge or Safari.');
           }
         }
         video.play().catch(() => {});
@@ -187,7 +187,7 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
             hls.recoverMediaError();
             return;
           }
-          setError('直播流解码失败，可能该频道编码不受当前浏览器支持，请尝试其他频道');
+          setError('The live stream could not be decoded. Try another channel.');
           return;
         }
         if (!playbackStarted) {
@@ -196,21 +196,21 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
             !mediaUrl.startsWith(STREAM_PROXY_PREFIX) &&
             (data.details === 'manifestLoadError' || data.type === Hls.ErrorTypes.NETWORK_ERROR)
           ) {
-            showHint('直连失败，改用代理重试...');
+            showHint('Direct playback failed. Retrying through the proxy...');
             // 直播 manifest 重写需要本站前缀，交给代理通道
             setupHls(video, proxyUrl(url), 'proxy');
             return;
           }
           // HLS 直连与代理均失败：可能是"无 .m3u8 后缀但内容是 MP4"的源，回退原生播放
-          showHint('HLS 解析失败，尝试原生播放...');
-          setupNative(video, url, true, `直播流加载失败${codeHint}，可能该频道已失效，请尝试其他频道`);
+          showHint('HLS playback failed. Trying native playback...');
+          setupNative(video, url, true, `Live stream loading failed${codeHint}. This channel may be unavailable; try another one`);
           return;
         }
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           // 播放中网络抖动：尝试恢复拉流；连续失败达到阈值则报错退出
           liveNetRetryCount++;
           if (liveNetRetryCount > 5) {
-            setError(`直播流中断${codeHint}，该源可能已失效，请尝试其他频道`);
+            setError(`Live stream interrupted${codeHint}. This source may be unavailable; try another channel`);
             return;
           }
           hls.startLoad();
@@ -229,12 +229,12 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
       try {
         Mpegts = (await import('mpegts.js')).default;
       } catch {
-        setError('FLV 播放模块加载失败，请检查网络后重试');
+        setError('The FLV player failed to load. Check your network and retry.');
         return;
       }
       if (disposed || destroyed) return;
       if (!Mpegts.getFeatureList().mseLivePlayback) {
-        setError('当前浏览器不支持 FLV 直播播放');
+        setError('This browser does not support FLV live playback');
         return;
       }
       const player = Mpegts.createPlayer(
@@ -257,17 +257,17 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
       player.on(Mpegts.Events.ERROR, (errType: string) => {
         if (disposed || destroyed) return;
         if (!playbackStarted && allowProxyFallback && !mediaUrl.startsWith(STREAM_PROXY_PREFIX)) {
-          showHint('直连失败，改用代理重试...');
+          showHint('Direct playback failed. Retrying through the proxy...');
           void setupFlv(video, proxyUrl(url), false);
           return;
         }
-        setError(`直播流加载失败（${errType}），请尝试其他频道`);
+        setError(`Live stream failed to load (${errType}). Try another channel`);
       });
       player.play().catch(() => {});
     };
 
     const engine = engineOf(url);
-    // 上一台/下一台：注册到播放器控制条（普通态与全屏均可见），未传不显示
+    // Previous Channel/Next Channel：注册到播放器控制条（普通态与全屏均可见），未传不显示
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const controls: any[] = [];
     const channelBtnSvg = (path: string) =>
@@ -278,7 +278,7 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
         position: 'left',
         index: 0,
         html: channelBtnSvg('M11 19l-7-7 7-7m8 14l-7-7 7-7'),
-        tooltip: '上一台',
+        tooltip: 'Previous Channel',
         click: () => onPrevChannel(),
       });
     }
@@ -288,11 +288,11 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
         position: 'left',
         index: 1,
         html: channelBtnSvg('M13 5l7 7-7 7M5 5l7 7-7 7'),
-        tooltip: '下一台',
+        tooltip: 'Next Channel',
         click: () => onNextChannel(),
       });
     }
-    // 触屏没有 hover，原生 3 秒自动隐藏会让直播控制栏（上一台/下一台）点不到
+    // 触屏没有 hover，原生 3 秒自动隐藏会让直播控制栏（Previous Channel/Next Channel）点不到
     // （issue #937）：触屏常驻、由点按视频 toggle 收起；桌面行为不变
     const touchPointer = prefersTouchPointer();
     if (touchPointer) Artplayer.CONTROL_HIDE_TIME = TOUCH_CONTROL_HIDE_MS;
@@ -349,7 +349,7 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
     });
     art.on('video:error', () => {
       // mpegts 走自身 ERROR 事件；这里兜底其它未知错误
-      if (!mpegtsRef.current) setError('视频播放失败，请尝试其他频道');
+      if (!mpegtsRef.current) setError('Playback failed. Try another channel');
     });
     art.on('ready', () => {
       // 直播隐藏进度条（ArtPlayer 无原生 isLive 开关）
@@ -362,7 +362,7 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
     // 15s 内未起播则提示
     const startTimer = setTimeout(() => {
       if (!playbackStarted && !disposed && !destroyed) {
-        setError('频道加载超时，可能该源已失效，请尝试其他频道');
+        setError('Channel loading timed out. Try another channel.');
       }
     }, 15000);
 
@@ -425,7 +425,7 @@ export function LivePlayer({ url, title, onPrevChannel, onNextChannel }: LivePla
               setRetryNonce((n) => n + 1);
             }}
           >
-            重新加载
+            Reload
           </button>
         </div>
       )}

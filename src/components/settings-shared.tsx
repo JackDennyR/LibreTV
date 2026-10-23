@@ -10,7 +10,7 @@ import { Spinner } from './states';
 
 /**
  * 设置面板共享件：把此前点播源 / 直播源各自「抄一遍」的标题、开关、
- * 下拉、空态、搜索框、探活徽章与健康度统一到一处，保证两类源面板风格与行为一致。
+ * 下拉、空态、Search框、探活徽章与健康度统一到一处，保证两类源面板风格与行为一致。
  */
 
 /** 探活结果（点播 / 直播共用同一结构） */
@@ -38,7 +38,7 @@ export function useSourceTests() {
       } catch (err) {
         setTests((prev) => ({
           ...prev,
-          [key]: { status: 'done', ok: false, error: err instanceof Error ? err.message : '测试失败' },
+          [key]: { status: 'done', ok: false, error: err instanceof Error ? err.message : 'Test failed' },
         }));
       }
     },
@@ -169,7 +169,7 @@ export function SearchInput({
       />
       <input
         className="input w-full !pl-8 !py-1.5 text-xs"
-        aria-label={placeholder ?? '搜索'}
+        aria-label={placeholder ?? 'Search'}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -200,7 +200,7 @@ export function TestBadge({
           )}
           title={state.ok ? `${state.ms}ms` : state.error}
         >
-          {state.ok ? badgeWhenOk({ ms: state.ms, count: state.count }) : `✗ ${state.error?.slice(0, 12) || '失败'}`}
+          {state.ok ? badgeWhenOk({ ms: state.ms, count: state.count }) : `✗ ${state.error?.slice(0, 12) || 'Failed'}`}
         </span>
       )}
       <button
@@ -219,7 +219,7 @@ export function TestBadge({
   );
 }
 
-/** 点播源搜索健康度徽章（随搜索/批量测活滚动更新）；被自动停用的源提供手动恢复入口 */
+/** 点播源Search健康度徽章（随Search/批量测活滚动更新）；被自动停用的源提供手动Restore入口 */
 export function HealthBadge({ sourceKey }: { sourceKey: string }) {
   const entry = useAppStore((s) => s.sourceHealth[sourceKey]);
   const inDisabledSub = useAppStore((s) => isInDisabledSubscription(s, sourceKey));
@@ -230,9 +230,9 @@ export function HealthBadge({ sourceKey }: { sourceKey: string }) {
     return (
       <span
         className="text-[10px] px-1.5 py-0.5 rounded bg-warning/15 text-warning shrink-0"
-        title="所属订阅已被停用，该源暂不参与搜索；到「数据源订阅」重新启用即可"
+        title="The subscription is disabled. Re-enable it under Source Subscriptions to include this source in searches."
       >
-        订阅已停用
+        Subscription Disabled
       </span>
     );
   }
@@ -242,7 +242,7 @@ export function HealthBadge({ sourceKey }: { sourceKey: string }) {
   const permanent = entry.permanent === true;
   const disabled = permanent || (!!entry.disabledUntil && entry.disabledUntil > Date.now());
   if (disabled) {
-    // 长期停用（阶梯用尽）没有到期时间，展示为红色并提示需手动恢复
+    // 长期停用（阶梯用尽）没有到期时间，展示为红色并提示需手动Restore
     const remainText = formatDisableTtl((entry.disabledUntil ?? 0) - Date.now());
     return (
       <span className="flex items-center gap-1 shrink-0">
@@ -253,23 +253,23 @@ export function HealthBadge({ sourceKey }: { sourceKey: string }) {
           )}
           title={
             permanent
-              ? `已第 ${entry.disableCount} 次被自动停用，暂停参与搜索；点「恢复」重新启用`
-              : `连续 ${entry.failStreak} 次超时/失败，${remainText}后自动恢复`
+              ? `Automatically disabled for the ${entry.disableCount} time. Select Restore to re-enable searching`
+              : `After ${entry.failStreak} timeouts or failures, ${remainText} until automatic restore`
           }
         >
           <Icon name="clock" className="w-3 h-3" />
-          {permanent ? '已停用' : remainText}
+          {permanent ? 'Disabled' : remainText}
         </span>
         <button
           className="text-[10px] px-1.5 py-0.5 rounded text-muted hover:text-accent hover:bg-hover transition-colors"
-          aria-label="恢复此源"
-          title="清除健康度记录，立即恢复参与搜索"
+          aria-label="Restore source"
+          title="Clear source health data and resume searching immediately"
           onClick={() => {
             useAppStore.getState().clearSourceHealth(sourceKey);
-            toast('已恢复，下次搜索重新参与', 'success');
+            toast('Restored. This source will join the next search.', 'success');
           }}
         >
-          恢复
+          Restore
         </button>
       </span>
     );
@@ -277,7 +277,7 @@ export function HealthBadge({ sourceKey }: { sourceKey: string }) {
 
   if (entry.ok) {
     return (
-      <span className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success shrink-0" title={`上次搜索 ${entry.ms}ms`}>
+      <span className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success shrink-0" title={`Last search ${entry.ms}ms`}>
         ✓ {entry.ms}ms
       </span>
     );
@@ -290,7 +290,7 @@ export function HealthBadge({ sourceKey }: { sourceKey: string }) {
       )}
       title={entry.error}
     >
-      连续 {entry.failStreak} 次失败
+      After {entry.failStreak} failures
     </span>
   );
 }

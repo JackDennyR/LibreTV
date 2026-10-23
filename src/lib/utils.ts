@@ -14,19 +14,19 @@ export function formatTime(seconds: number): string {
 
 export function formatRelativeTime(timestamp: number): string {
   const diff = Date.now() - timestamp;
-  if (diff < 60_000) return '刚刚';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}分钟前`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}小时前`;
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}天前`;
+  if (diff < 60_000) return 'just now';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} minutes ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} hours ago`;
+  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)} days ago`;
   const d = new Date(timestamp);
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/** 停用时长的可读文案：不足 1 小时按分钟，超过按小时（按剩余时间展示时向上取整） */
+/** 停用时长的可读文案：不足 1 hours按分钟，超过按小时（按剩余时间展示时向上取整） */
 export function formatDisableTtl(ms: number): string {
   const minutes = Math.max(1, Math.ceil(ms / 60_000));
-  return minutes >= 60 ? `${Math.round(minutes / 60)} 小时` : `${minutes} 分钟`;
+  return minutes >= 60 ? `${Math.round(minutes / 60)} hours` : `${minutes} minutes`;
 }
 
 /**

@@ -46,7 +46,7 @@ function nameFromUrl(url: string): string {
     }
     return u.hostname;
   } catch {
-    return '未命名频道';
+    return 'Unnamed Channel';
   }
 }
 

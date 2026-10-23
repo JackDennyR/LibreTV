@@ -25,10 +25,10 @@ import { cn } from '@/lib/utils';
 import { SmartImage } from '@/components/smart-image';
 
 /**
- * 直播页：左侧播放器 + 频道信息 + 节目单；右侧频道侧栏。
- * 状态由 URL 驱动（?url=&name=&group=&tvgId=&epg=），支持频道深链与刷新保持。
- * 换台路径：侧栏点击、全局 ↑↓ 键盘、播放器控制条上一台/下一台（全屏可用）。
- * 移动端侧栏为底部抽屉（右下角 FAB 呼出，选中频道后自动收起）。
+ * Live TV页：左侧播放器 + Channels信息 + TV Guide；右侧Channels侧栏。
+ * 状态由 URL 驱动（?url=&name=&group=&tvgId=&epg=），支持Channels深链与刷新保持。
+ * 换台路径：侧栏点击、全局 ↑↓ 键盘、播放器控制条Previous Channel/Next Channel（全屏可用）。
+ * 移动端侧栏为底部抽屉（右下角 FAB 呼出，选中Channels后自动收起）。
  */
 export default function LivePage() {
   return (
@@ -50,23 +50,23 @@ function LiveContent() {
   const customImageProxy = useAppStore((s) => s.customImageProxy);
   const { verified } = useAuth();
   const [copied, setCopied] = useState(false);
-  // 移动端频道抽屉开合
+  // 移动端Channels抽屉开合
   const [listOpen, setListOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   /** 侧栏上报的筛选排序结果（键盘换台沿此列表顺序）；ref 存储，不触发重渲染 */
   const filteredRef = useRef<LiveChannelItem[]>([]);
-  /** 当前频道镜像：selectChannel 内读取最近一次播放的频道，用于记录"上一个频道" */
+  /** 当前Channels镜像：selectChannel 内读取最近一次播放的Channels，用于记录"Previous Channel" */
   const currentChannelRef = useRef<LiveChannelItem | undefined>(undefined);
-  /** 上一个频道：退格键/按钮一键切回（电视遥控器 back 键习惯） */
+  /** Previous Channel：退格键/按钮一键切回（电视遥控器 back 键习惯） */
   const lastChannelRef = useRef<LiveChannelItem | null>(null);
 
-  // 仅聚合已启用的直播源（设置 → 直播源中的勾选状态）
+  // 仅聚合已启用的Live TV源（设置 → Live TV源中的勾选状态）
   const sources = useMemo(() => {
     const selected = new Set(liveSelectedUrls);
     return allLiveSources({ liveEnvSources, liveSubscriptions }).filter((s) => selected.has(s.url));
   }, [liveSelectedUrls, liveEnvSources, liveSubscriptions]);
 
-  // 聚合全部直播源的 M3U 解析结果（单源失败不影响整体）
+  // 聚合全部Live TV源的 M3U 解析结果（单源失败不影响整体）
   const playlistsQuery = useQuery({
     queryKey: ['livePlaylists', sources.map((s) => s.url).join('|')],
     queryFn: async () => {
@@ -98,7 +98,7 @@ function LiveContent() {
     return { channels: list, groups, failedCount: failed };
   }, [playlistsQuery.data]);
 
-  // 当前频道：优先取列表内完整对象（含台标），否则由 URL 参数重建
+  // 当前Channels：优先取列表内完整对象（含台标），否则由 URL 参数重建
   const currentUrl = searchParams.get('url') || '';
   const currentChannel = useMemo(() => {
     const found = channels.find((c) => c.url === currentUrl);
@@ -107,7 +107,7 @@ function LiveContent() {
     return {
       id: searchParams.get('tvgId') || currentUrl,
       url: currentUrl,
-      name: searchParams.get('name') || '未知频道',
+      name: searchParams.get('name') || 'Unknown Channel',
       group: searchParams.get('group') || undefined,
       tvgId: searchParams.get('tvgId') || undefined,
       epg: searchParams.get('epg') || undefined,
@@ -147,7 +147,7 @@ function LiveContent() {
     filteredRef.current = list;
   }, []);
 
-  /** 沿侧栏当前筛选排序的列表顺序切上一台/下一台（循环） */
+  /** 沿侧栏当前筛选排序的列表顺序切Previous Channel/Next Channel（循环） */
   const switchChannelByOffset = useCallback(
     (delta: 1 | -1) => {
       const list = filteredRef.current;
@@ -164,7 +164,7 @@ function LiveContent() {
   const goPrevChannel = useCallback(() => switchChannelByOffset(-1), [switchChannelByOffset]);
   const goNextChannel = useCallback(() => switchChannelByOffset(1), [switchChannelByOffset]);
 
-  /** 切回上一个频道（Backspace / 信息条按钮） */
+  /** 切回Previous Channel（Backspace / 信息条按钮） */
   const backToPrevChannel = useCallback(() => {
     const prev = lastChannelRef.current;
     if (!prev) return;
@@ -172,7 +172,7 @@ function LiveContent() {
     selectChannel(prev);
   }, [selectChannel]);
 
-  // 全局键盘：↑↓ 直接切台，Backspace 切回上一个频道。
+  // 全局键盘：↑↓ 直接切台，Backspace 切回Previous Channel。
   // 输入框/列表光标导航场景让位（列表聚焦时由列表内 ↑↓ 管理光标）
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -208,7 +208,7 @@ function LiveContent() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-faint text-sm">等待访问验证...</p>
+          <p className="text-faint text-sm">Checking access...</p>
         </div>
       </div>
     );
@@ -222,13 +222,13 @@ function LiveContent() {
       <Header showSearch />
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-          {/* 主栏：播放器 + 信息条 + 节目单 */}
+          {/* 主栏：播放器 + 信息条 + TV Guide */}
           <div className="min-w-0">
             <div className="aspect-video bg-black rounded-lg overflow-hidden">
               {currentUrl ? (
                 <LivePlayer
                   url={currentUrl}
-                  title={currentChannel?.name || '直播'}
+                  title={currentChannel?.name || 'Live TV'}
                   onPrevChannel={goPrevChannel}
                   onNextChannel={goNextChannel}
                 />
@@ -238,17 +238,17 @@ function LiveContent() {
                   <p className="text-white/60 text-sm">
                     {sources.length === 0
                       ? liveEnvSources.length + liveSubscriptions.length > 0
-                        ? '所有直播源均已停用，请在设置中勾选启用'
-                        : '请先在设置中添加直播源（M3U 订阅）'
+                        ? 'All live TV sources are disabled. Enable one in Settings.'
+                        : 'Add an M3U live TV source in Settings first.'
                       : playlistsQuery.isLoading
-                        ? '频道列表加载中...'
-                        : '从右侧选择一个频道开始观看'}
+                        ? 'Loading channels...'
+                        : 'Select a channel to start watching.'}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* 频道信息条 */}
+            {/* Channels信息条 */}
             {currentChannel && (
               <div className="bg-surface-raised border border-line rounded-lg p-3 mt-3 flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded bg-chip flex items-center justify-center overflow-hidden">
@@ -283,8 +283,8 @@ function LiveContent() {
                         ? 'text-muted hover:text-accent hover:bg-hover'
                         : 'text-faint/40 cursor-default'
                     )}
-                    aria-label="上一个频道"
-                    title={lastChannelRef.current ? `上一个频道：${lastChannelRef.current.name}（Backspace）` : '暂无上一个频道'}
+                    aria-label="Previous Channel"
+                    title={lastChannelRef.current ? `Previous Channel：${lastChannelRef.current.name}（Backspace）` : 'No previous channel'}
                     onClick={backToPrevChannel}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,8 +298,8 @@ function LiveContent() {
                   </button>
                   <button
                     className="rounded-md p-2 text-muted hover:text-accent hover:bg-hover transition-colors"
-                    aria-label="上一台"
-                    title="上一台（↑）"
+                    aria-label="Previous Channel"
+                    title="Previous Channel（↑）"
                     onClick={goPrevChannel}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -313,8 +313,8 @@ function LiveContent() {
                   </button>
                   <button
                     className="rounded-md p-2 text-muted hover:text-accent hover:bg-hover transition-colors"
-                    aria-label="下一台"
-                    title="下一台（↓）"
+                    aria-label="Next Channel"
+                    title="Next Channel（↓）"
                     onClick={goNextChannel}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,8 +331,8 @@ function LiveContent() {
                       'rounded-md p-2 transition-colors',
                       isFavorite ? 'text-warning' : 'text-muted hover:text-warning hover:bg-hover'
                     )}
-                    aria-label={isFavorite ? '取消收藏' : '收藏'}
-                    title={isFavorite ? '取消收藏' : '收藏'}
+                    aria-label={isFavorite ? 'Remove from Favorites' : 'Favorite'}
+                    title={isFavorite ? 'Remove from Favorites' : 'Favorite'}
                     onClick={() => useAppStore.getState().toggleLiveFavorite(currentChannel.url)}
                   >
                     <svg
@@ -351,8 +351,8 @@ function LiveContent() {
                   </button>
                   <button
                     className="rounded-md p-2 text-muted hover:text-accent hover:bg-hover transition-colors"
-                    aria-label="复制播放地址"
-                    title="复制播放地址"
+                    aria-label="Copy Stream URL"
+                    title="Copy Stream URL"
                     onClick={async () => {
                       const ok = await copyToClipboard(currentChannel.url);
                       if (ok) {
@@ -362,7 +362,7 @@ function LiveContent() {
                     }}
                   >
                     {copied ? (
-                      <span className="text-[10px] text-success">已复制</span>
+                      <span className="text-[10px] text-success">Copied</span>
                     ) : (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path
@@ -378,10 +378,10 @@ function LiveContent() {
               </div>
             )}
 
-            {/* 节目单 */}
+            {/* TV Guide */}
             {currentChannel && (
               <section className="bg-surface-raised border border-line rounded-lg p-3 mt-3">
-                <h2 className="text-sm font-semibold text-content mb-2.5">节目单</h2>
+                <h2 className="text-sm font-semibold text-content mb-2.5">TV Guide</h2>
                 <LiveEpgPanel epgUrl={currentChannel.epg} tvgId={currentChannel.tvgId} />
               </section>
             )}
@@ -407,10 +407,10 @@ function LiveContent() {
           >
             {/* 抽屉把手栏（仅移动端） */}
             <div className="flex items-center justify-between px-3 pt-3 pb-1 shrink-0 lg:hidden">
-              <span className="text-sm font-semibold text-content">频道列表</span>
+              <span className="text-sm font-semibold text-content">Channel List</span>
               <button
                 className="rounded-md p-1.5 text-muted hover:text-content hover:bg-hover transition-colors"
-                aria-label="关闭频道列表"
+                aria-label="Close Channel List"
                 onClick={() => setListOpen(false)}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,16 +436,16 @@ function LiveContent() {
                 <p className="text-[10px] text-faint px-3 py-1.5 border-t border-line shrink-0">
                   {sources.length === 0
                     ? liveEnvSources.length + liveSubscriptions.length > 0
-                      ? '所有直播源均已停用，请在设置中勾选启用'
-                      : '暂无直播源，请在设置 → 直播源中添加'
-                    : `${failedCount > 0 ? `${failedCount} 个订阅拉取失败 · ` : ''}共 ${sources.length} 个已启用源`}
+                      ? 'All live TV sources are disabled. Enable one in Settings.'
+                      : 'No live TV sources. Add one in Settings > Live TV Sources.'
+                    : `${failedCount > 0 ? `${failedCount} subscriptions failed to load · ` : ''}Total ${sources.length} enabled sources`}
                 </p>
               )}
             </div>
           </aside>
         </div>
 
-        {/* 移动端呼出频道列表的悬浮按钮 */}
+        {/* 移动端呼出Channel List的悬浮按钮 */}
         {!listOpen && channels.length > 0 && (
           <button
             className="fixed bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm text-on-accent shadow-lg lg:hidden"
@@ -459,7 +459,7 @@ function LiveContent() {
                 d="M4 6h16M4 12h16M4 18h16"
               />
             </svg>
-            频道
+            Channels
           </button>
         )}
       </main>

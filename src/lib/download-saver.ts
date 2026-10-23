@@ -53,7 +53,7 @@ function memoryTarget(filename: string, confirmOverBytes = 500 * 1024 * 1024): S
       if (done) return;
       bytes += data.byteLength;
       if (bytes > confirmOverBytes && bytes - data.byteLength <= confirmOverBytes) {
-        if (!window.confirm(`下载体积已超过 ${Math.round(confirmOverBytes / 1024 / 1024)}MB，继续将暂存在内存中，可能导致页面卡顿。是否继续？`)) {
+        if (!window.confirm(`Download size exceeds ${Math.round(confirmOverBytes / 1024 / 1024)} MB. Continuing will buffer the file in memory and may slow your browser. Continue?`)) {
           throw new Error('用户取消了下载（内存超限）');
         }
       }
@@ -110,7 +110,7 @@ export async function pickSaveTarget(filename: string, estimatedBytes?: number):
     }
   }
   if (estimatedBytes && estimatedBytes > 500 * 1024 * 1024) {
-    if (!window.confirm('该视频体积较大（未提供磁盘直写能力的环境），将暂存在内存中，可能导致页面卡顿。是否继续？')) {
+    if (!window.confirm('This large video must be buffered in memory and may slow your browser. Continue?')) {
       throw new UserCancelledError();
     }
   }

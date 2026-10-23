@@ -16,8 +16,8 @@ import { QualityBadge } from './quality-badge';
 import { useQualityProbe } from './use-quality-probe';
 
 /**
- * 换源面板：跨源按标题搜索 → 匹配同名/同前缀资源 → 并发测速（详情接口耗时）→ 按速度排序展示。
- * 切换时保留当前集数索引（旧版 switchToResource 逻辑的去 DOM 化重写）。
+ * 换源面板：跨源按标题搜索 → 匹配同名/同前缀资源 → 并发测速（详情接口耗时）→ 按Speed排序展示。
+ * 切换时保留CurrentEpisodes索引（旧版 switchToResource 逻辑的去 DOM 化重写）。
  */
 
 interface Candidate {
@@ -26,7 +26,7 @@ interface Candidate {
   ms?: number;
   ok?: boolean;
   episodes?: number;
-  /** 测速失败原因：失败源点开后至少能知道是超时、还是源站直接拒绝 */
+  /** 测速Failed原因：Failed源点开后至少能知道是超时、还是源站直接拒绝 */
   error?: string;
 }
 
@@ -54,20 +54,20 @@ export function SwitchSourceModal({
   const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [phase, setPhase] = useState<'searching' | 'testing' | 'done'>('searching');
-  /** 封面加载失败记录（按卡片 key）；失败后降级为占位图标，避免破图 */
+  /** 封面加载Failed记录（按卡片 key）；Failed后降级为占位图标，避免破图 */
   const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
-  /** 当前选中的候选：存稳定 key 而不是下标，测速重排后仍然指向同一个源 */
+  /** Current选中的候选：存稳定 key 而不是下标，测速重排后仍然指向同一个源 */
   const [selectedKey, setSelectedKey] = useState('');
-  /** 正在单独重测的候选 key：失败源给一次重试机会，失败原因不能只是死路 */
+  /** 正在单独重测的候选 key：Failed源给一次重试机会，Failed原因不能只是死路 */
   const [retestingKey, setRetestingKey] = useState('');
-  /** 重测的在途请求：换片重搜/关闭面板时中止，避免卸载后 setState */
+  /** 重测的在途请求：换片重搜/Close面板时中止，避免卸载后 setState */
   const retestAbortRef = useRef<AbortController | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
   /** Tab 栏左右是否还有内容：没有渐隐提示，用户不知道右边还藏着源 */
   const [tabEdges, setTabEdges] = useState({ left: false, right: false });
 
-  // 打开时把焦点移入弹窗、Tab 圈闭在弹窗内、关闭后归还焦点
+  // 打开时把焦点移入弹窗、Tab 圈闭在弹窗内、Close后归还焦点
   useFocusTrap(true, panelRef);
 
   const sources = useMemo(() => {
@@ -83,7 +83,7 @@ export function SwitchSourceModal({
   }, [store]);
 
   useEffect(() => {
-    // 弹窗打开期间锁定背景滚动；Esc 关闭（与其它弹窗一致）
+    // 弹窗打开期间锁定背景滚动；Esc Close（与其它弹窗一致）
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
@@ -100,7 +100,7 @@ export function SwitchSourceModal({
   }, [onClose]);
 
   useEffect(() => {
-    // 关闭弹窗时中止在途请求：否则 N 个源的搜索 + N 个详情测速会继续占用网络与后端
+    // Close弹窗时中止在途请求：否则 N 个源的搜索 + N 个详情测速会继续占用网络与后端
     const controller = new AbortController();
     let cancelled = false;
 
@@ -124,7 +124,7 @@ export function SwitchSourceModal({
           if (exact) matched.push({ source: s, result: exact });
         }
 
-        // 2) 并发测速（详情接口耗时）并获取集数
+        // 2) 并发测速（详情接口耗时）并获取Episodes
         setPhase('testing');
         await Promise.all(
           matched.map(async (c) => {
@@ -140,10 +140,10 @@ export function SwitchSourceModal({
         setCandidates(matched);
         setPhase('done');
       } catch (err) {
-        // 主动中止不算失败，不提示
+        // 主动中止不算Failed，不提示
         const aborted = err instanceof DOMException && err.name === 'AbortError';
         if (!cancelled && !aborted) {
-          toast(err instanceof Error ? err.message : '换源搜索失败', 'error');
+          toast(err instanceof Error ? err.message : 'Failed to find alternate sources', 'error');
           setPhase('done');
         }
       }
@@ -152,7 +152,7 @@ export function SwitchSourceModal({
     return () => {
       cancelled = true;
       controller.abort();
-      // 换片重搜 / 关闭面板时，单独发起的重测也要跟着停
+      // 换片重搜 / Close面板时，单独发起的重测也要跟着停
       retestAbortRef.current?.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,7 +179,7 @@ export function SwitchSourceModal({
 
   /**
    * 面板展示的源：优先用户点过的那个；还没点过时先落到「第一个可切换的源」——
-   * 打开面板的目的就是换源，默认停在「当前播放中」等于让用户多点一次。
+   * 打开面板的目的就是换源，默认停在「CurrentNow Playing」等于让用户多点一次。
    */
   const selected =
     sorted.find((c) => candidateKey(c) === selectedKey) ??
@@ -230,7 +230,7 @@ export function SwitchSourceModal({
             : x
         )
       );
-      // 重测成功说明源只是刚才抖了一下：强制补一次画质，否则会撞上失败冷却（2 分钟内不再探）
+      // 重测成功说明源只是刚才抖了一下：强制补一次画质，否则会撞上Failed冷却（2 分钟内不再探）
       if (r.ok) retry([c.result]);
     } finally {
       if (retestAbortRef.current === controller) {
@@ -242,11 +242,11 @@ export function SwitchSourceModal({
 
   const switchTo = (c: Candidate) => {
     if (!c.episodes) {
-      toast('该源无可用播放资源', 'warning');
+      toast('No playable stream available from this source', 'warning');
       return;
     }
     const targetIndex = currentIndex < c.episodes ? currentIndex : 0;
-    onClose(); // 先关闭面板，避免路由参数变化后弹窗残留旧数据
+    onClose(); // 先Close面板，避免路由参数变化后弹窗残留旧数据
     router.push(
       buildWatchUrl({
         sourceKey: c.source.key,
@@ -272,7 +272,7 @@ export function SwitchSourceModal({
         className="bg-surface-raised rounded-t-2xl sm:rounded-xl w-full max-w-3xl shadow-2xl p-5 pb-[calc(1.25rem_+_env(safe-area-inset-bottom))] sm:pb-5 max-h-[92vh] sm:max-h-[85vh] flex flex-col overflow-hidden animate-slide-up outline-none"
         role="dialog"
         aria-modal="true"
-        aria-label={`换源：${currentTitle}`}
+        aria-label={`Change source: ${currentTitle}`}
       >
         <div className="sm:hidden mx-auto mb-3 h-1 w-10 shrink-0 rounded-full bg-line" aria-hidden />
         {/* 标题固定在滚动区之外：比 sticky 更省事，也不会有背景覆盖不到 padding 的缝隙 */}
@@ -283,23 +283,23 @@ export function SwitchSourceModal({
             </h2>
             <p className="text-xs text-faint">
               {phase === 'searching'
-                ? '正在搜索各资源...'
+                ? 'Searching available sources...'
                 : phase === 'testing'
-                  ? '正在测试各资源速率...'
-                  : `共 ${sorted.length} 个来源 · ${sorted.filter((c) => c.ok).length} 个可用`}
+                  ? 'Testing stream speed...'
+                  : `Total ${sorted.length} sources · ${sorted.filter((c) => c.ok).length} available`}
             </p>
             {phase === 'done' && progress.total > 0 && (
               <p className="text-xs text-faint tabular-nums mt-0.5">
                 {progress.done < progress.total
-                  ? `画质探测中 ${progress.done}/${progress.total}`
+                  ? `Checking quality ${progress.done}/${progress.total}`
                   : progress.known > 0
-                    ? `画质已探到 ${progress.known}/${progress.total}`
-                    : // 一个都没探到不等于失败：多为单码率/直链，说清楚省得用户以为坏了
-                      '源站未提供画质'}
+                    ? `Quality detected for ${progress.known}/${progress.total}`
+                    : // 一个都没探到不等于Failed：多为单码率/直链，说清楚省得用户以为坏了
+                      'Quality information not provided by source'}
               </p>
             )}
           </div>
-          <button className="p-1.5 rounded-md text-muted hover:text-content hover:bg-hover" onClick={onClose} aria-label="关闭">
+          <button className="p-1.5 rounded-md text-muted hover:text-content hover:bg-hover" onClick={onClose} aria-label="Close">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -309,9 +309,9 @@ export function SwitchSourceModal({
         {/* 内容区独占剩余高度并自己滚动：标题与拖拽条始终可见，不随内容滚走 */}
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin">
         {phase !== 'done' ? (
-          <LoadingState label={phase === 'searching' ? '搜索各资源中...' : '测速中...'} />
+          <LoadingState label={phase === 'searching' ? 'Searching sources...' : 'Testing Speed...'} />
         ) : sorted.length === 0 ? (
-          <EmptyState variant="plain" title="其他点播源未找到同名资源" />
+          <EmptyState variant="plain" title="No matching title found on other movie sources" />
         ) : (
           <>
             {/* 横向 Tab：源多时比网格省纵向空间，手机上可直接滑动 */}
@@ -320,7 +320,7 @@ export function SwitchSourceModal({
                 ref={tabBarRef}
                 className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin"
                 role="tablist"
-                aria-label="选择播放源"
+                aria-label="Choose Playback Source"
               >
                 {sorted.map((c) => {
                   const isCurrent = isCurrentCandidate(c, currentSourceKey, currentVodId);
@@ -341,8 +341,8 @@ export function SwitchSourceModal({
                       )}
                       onClick={() => setSelectedKey(key)}
                     >
-                      <span className="max-w-[8rem] truncate font-medium">{c.source.name}</span>
-                      {isCurrent && <span className="text-[10px] opacity-80">当前</span>}
+                      <span data-no-english className="max-w-[8rem] truncate font-medium">{c.source.name}</span>
+                      {isCurrent && <span className="text-[10px] opacity-80">Current</span>}
                       {qLabel && <span className="text-[10px] tabular-nums opacity-70">{qLabel}</span>}
                       {c.ok ? (
                         <span
@@ -353,7 +353,7 @@ export function SwitchSourceModal({
                           title={`${c.ms}ms`}
                         />
                       ) : (
-                        <span className="text-[10px] text-danger">失败</span>
+                        <span className="text-[10px] text-danger">Failed</span>
                       )}
                     </button>
                   );
@@ -368,7 +368,7 @@ export function SwitchSourceModal({
               )}
             </div>
 
-            {/* 选中源详情：封面降到缩略图，只留速度/集数两项真正要比的数据 */}
+            {/* 选中源详情：封面降到缩略图，只留Speed/Episodes两项真正要比的数据 */}
             {selected && (() => {
               const c = selected;
               const isCurrent = isCurrentCandidate(c, currentSourceKey, currentVodId);
@@ -395,43 +395,43 @@ export function SwitchSourceModal({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 min-w-0">
-                      <h3 className="text-sm font-semibold text-content truncate" title={c.source.name}>
+                      <h3 data-no-english className="text-sm font-semibold text-content truncate" title={c.source.name}>
                         {c.source.name}
                       </h3>
                       <QualityBadge entry={qualities[qKey]} loading={probing[qKey]} onRetry={() => retry([c.result])} />
                       {isCurrent && (
-                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent">播放中</span>
+                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent">Now Playing</span>
                       )}
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-2 sm:max-w-[16rem]">
                       <div className="rounded-md bg-chip px-2 py-1.5">
-                        <div className="text-[10px] text-faint">速度</div>
+                        <div className="text-[10px] text-faint">Speed</div>
                         <div
                           className={cn(
                             'text-xs font-medium tabular-nums',
                             !c.ok ? 'text-danger' : (c.ms ?? 0) > 2000 ? 'text-warning' : 'text-success'
                           )}
                         >
-                          {c.ok ? `${c.ms}ms` : '不可用'}
+                          {c.ok ? `${c.ms}ms` : 'Unavailable'}
                         </div>
                       </div>
                       <div className="rounded-md bg-chip px-2 py-1.5">
-                        <div className="text-[10px] text-faint">集数</div>
+                        <div className="text-[10px] text-faint">Episodes</div>
                         <div className="text-xs font-medium text-content">
-                          {c.episodes ? `${c.episodes} 集` : '无资源'}
+                          {c.episodes ? `${c.episodes} episodes` : 'No Stream'}
                         </div>
                       </div>
                     </div>
                     <div className="mt-2.5 flex flex-wrap items-center gap-2">
                       {isCurrent ? (
-                        <span className="text-xs text-accent">当前正在播放</span>
+                        <span className="text-xs text-accent">Now Playing</span>
                       ) : (
                         <>
                           <button type="button" className="btn-primary btn-sm" disabled={!c.episodes} onClick={() => switchTo(c)}>
-                            切换到此源
+                            Switch to This Source
                           </button>
-                          {/* 测速失败但拿得到集数：允许点。详情接口偶发超时很常见，别把能播的源挡在外面 */}
-                          {!c.ok && !!c.episodes && <span className="text-xs text-warning">测速未通过，仍可尝试</span>}
+                          {/* 测速Failed但拿得到Episodes：允许点。详情接口偶发超时很常见，别把能播的源挡在外面 */}
+                          {!c.ok && !!c.episodes && <span className="text-xs text-warning">Speed test failed. Playback may still work.</span>}
                         </>
                       )}
                       {!c.ok && (
@@ -441,7 +441,7 @@ export function SwitchSourceModal({
                           disabled={retestingKey === key}
                           onClick={() => void retest(c)}
                         >
-                          {retestingKey === key ? '重测中...' : '重新测速'}
+                          {retestingKey === key ? 'Retesting...' : 'Retest Speed'}
                         </button>
                       )}
                     </div>

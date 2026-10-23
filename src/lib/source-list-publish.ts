@@ -27,7 +27,7 @@ interface Publisher {
 }
 
 /**
- * 依次尝试的粘贴板，前一个失败自动换下一个。
+ * 依次尝试的粘贴板，前一个Failed自动换下一个。
  * 这些都是免费公共服务，随时可能收紧或失效，所以做成「多后端依次降级」而不是写死一家。
  */
 const PUBLISHERS: Publisher[] = [
@@ -40,10 +40,10 @@ const PUBLISHERS: Publisher[] = [
         headers: { 'Content-Type': 'text/plain; charset=utf-8', 'User-Agent': USER_AGENT },
         signal,
       });
-      // 201 = 完整写入；206 = 超出服务端体积上限被截断，必须当失败处理，否则会发布出半个 JSON
+      // 201 = 完整写入；206 = 超出服务端体积上限被截断，必须当Failed处理，否则会发布出半个 JSON
       if (res.status !== 201) throw new Error(`HTTP ${res.status}`);
       const url = (await res.text()).trim();
-      if (!/^https:\/\/paste\.rs\/[\w-]+$/.test(url)) throw new Error('返回内容不是有效链接');
+      if (!/^https:\/\/paste\.rs\/[\w-]+$/.test(url)) throw new Error('Response did not contain a valid URL');
       return url;
     },
   },
@@ -60,13 +60,13 @@ const PUBLISHERS: Publisher[] = [
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const url = (await res.text()).trim();
-      if (!/^https:\/\/0x0\.st\/[\w.-]+$/.test(url)) throw new Error('返回内容不是有效链接');
+      if (!/^https:\/\/0x0\.st\/[\w.-]+$/.test(url)) throw new Error('Response did not contain a valid URL');
       return url;
     },
   },
 ];
 
-/** 依次尝试各粘贴板；全部失败时抛出带明细的错误，便于用户判断是网络问题还是服务挂了 */
+/** 依次尝试各粘贴板；全部Failed时抛出带明细的错误，便于用户判断是网络问题还是服务挂了 */
 export async function publishSourceList(text: string): Promise<PublishResult> {
   const errors: string[] = [];
   for (const publisher of PUBLISHERS) {
@@ -76,11 +76,11 @@ export async function publishSourceList(text: string): Promise<PublishResult> {
       const url = await publisher.run(text, controller.signal);
       return { url, provider: publisher.name };
     } catch (err) {
-      const reason = err instanceof Error ? (err.name === 'AbortError' ? '超时' : err.message) : '失败';
+      const reason = err instanceof Error ? (err.name === 'AbortError' ? 'Timed out' : err.message) : 'Failed';
       errors.push(`${publisher.name}（${reason}）`);
     } finally {
       clearTimeout(timer);
     }
   }
-  throw new Error(`发布失败：${errors.join('、')}`);
+  throw new Error(`Publishing failed: ${errors.join('、')}`);
 }

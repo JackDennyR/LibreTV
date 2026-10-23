@@ -11,7 +11,7 @@ import { QualityBadge } from './quality-badge';
 import { useQualityProbe } from './use-quality-probe';
 import { useInView } from './use-in-view';
 
-// —— 跨源同名聚合 ——
+// —— 跨 source同名聚合 ——
 
 export interface AggregatedGroup {
   key: string;
@@ -30,15 +30,15 @@ function buildGroup(name: string, year: string | undefined, items: SearchResultI
     year,
     typeName: items.find((i) => i.typeName)?.typeName,
     pic: items.find((i) => i.pic)?.pic,
-    // 同一部剧各源文案详略不同（「全34集」/「完结」/「更新至34集」），推到统一结论，
-    // 否则同一部剧的来源列表会看起来状态各异
+    // 同一部剧各 source文案详略不同（「全34集」/「完结」/「更新至34集」），推到统一结论，
+    // 否则同一部剧的来 source列表会看起来状态各异
     remarks: inferGroupRemarks(items.map((i) => i.remarks)),
     items,
   };
 }
 
 /**
- * 把扁平的跨源搜索结果按「同名影片」聚合：
+ * 把扁平的跨 source搜索结果按「同名影片」聚合：
  * - 以名称分桶；桶内年份不一致时（同名翻拍）按年份拆分，无年份的条目并入年份桶；
  * - 保持传入顺序（搜索结果已按名称排序）。
  */
@@ -68,18 +68,18 @@ export function aggregateResults(list: SearchResultItem[]): AggregatedGroup[] {
 
 /**
  * 聚合影片卡片：
- * - 单源：点击直接打开该源详情（与旧体验一致）；
- * - 多源：显示「N 个来源」徽章，点击展开各源列表，选择具体源后打开详情。
+ * - 单 source：点击直接打开该 source详情（与旧体验一致）；
+ * - 多 source：显示「N sources」徽章，点击展开各 source列表，选择具体 source后打开详情。
  */
 export function AggregatedCard({
   group,
   onOpen,
-  sources,
+ sources,
 }: {
   group: AggregatedGroup;
   onOpen: (item: SearchResultItem) => void;
-  /** 完整源配置：探测画质需要 source.url / source.detail，搜索结果里只带 sourceUrl */
-  sources?: SourceConfig[];
+  /** 完整 source配置：探测画质需要 source.url / source.detail，搜索结果里只带 sourceUrl */
+ sources?: SourceConfig[];
 }) {
   const imageProxyMode = useAppStore((s) => s.imageProxyMode);
   const customImageProxy = useAppStore((s) => s.customImageProxy);
@@ -100,8 +100,8 @@ export function AggregatedCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.key]);
 
-  // 单源卡片没有「展开」这一步：进入视口 500ms 后交给全局队列（并发 2），
-  // 首屏能先亮，又不会把一屏十几张卡同时打向源站
+  // 单 source卡片没有「展开」这一步：进入视口 500ms 后交给全局队列（并发 2），
+  // 首屏能先亮，又不会把一屏十几张卡同时打向 source站
   const { ref: inViewRef, inView } = useInView<HTMLDivElement>(!multi);
   useEffect(() => {
     if (!multi && inView) probeQueued(group.items);
@@ -121,7 +121,7 @@ export function AggregatedCard({
   const singleItem = multi ? undefined : group.items[0];
   const singleKey = singleItem ? qualityKey(singleItem.sourceKey, singleItem.vodId) : undefined;
 
-  // 展开面板按画质降序（同级保持原有源顺序）：探到一个更好的就往上走，
+  // 展开面板按画质降序（同级保持原有 source顺序）：探到一个更好的就往上走，
   // 用户不必自己横向比较三行灰字。没探到 / 未探到的排在最后。
   const heightOf = (item: SearchResultItem) => qualities[qualityKey(item.sourceKey, item.vodId)]?.height ?? 0;
   const sortedItems = useMemo(() => {
@@ -132,10 +132,10 @@ export function AggregatedCard({
       .map((entry) => entry.item);
   }, [group.items, qualities]);
   const bestHeight = sortedItems.reduce((max, item) => Math.max(max, heightOf(item)), 0);
-  // 并列最高时只强调排在第一的那一行：三个源里框两个等于没有推荐
+  // 并列最高时只强调排在第一的那一行：三个 source里框两个等于没有推荐
   const firstBest = sortedItems.find((item) => bestHeight > 0 && heightOf(item) === bestHeight);
   const bestKey = firstBest ? qualityKey(firstBest.sourceKey, firstBest.vodId) : undefined;
-  // 各源集数一致时（常见：同剧多源同步更新）只在表头说一次，逐行不再重复
+  // 各 sourceEpisodes一致时（常见：同剧多 source同步更新）只在表头说一次，逐行不再重复
   const remarksList = sortedItems.map((item) => compactRemarks(item.remarks));
   const sharedRemarks =
     remarksList.length > 0 && remarksList.every((label) => label && label === remarksList[0])
@@ -174,7 +174,7 @@ export function AggregatedCard({
             <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
             {multi && (
               <span className="absolute top-1.5 left-1.5 tag bg-black/70 text-accent font-medium">
-                {group.items.length} 源
+                {group.items.length} sources
               </span>
             )}
           </div>
@@ -185,7 +185,7 @@ export function AggregatedCard({
             </svg>
             {multi && (
               <span className="absolute top-1.5 left-1.5 tag bg-black/70 text-accent font-medium">
-                {group.items.length} 源
+                {group.items.length} sources
               </span>
             )}
           </div>
@@ -193,14 +193,14 @@ export function AggregatedCard({
 
         <div className="p-2.5 flex flex-col flex-grow min-w-0">
           <div className="flex-grow">
-            <h3 className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={group.name}>
+            <h3 data-no-english className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={group.name}>
               {group.name}
             </h3>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {group.typeName && <span className="tag bg-accent/15 text-accent">{group.typeName}</span>}
+              {group.typeName && <span data-no-english className="tag bg-accent/15 text-accent">{group.typeName}</span>}
               {group.year && <span className="tag bg-purple-500/15 text-purple-600 dark:text-purple-300">{group.year}</span>}
               {adult && <span className="tag bg-pink-500/15 text-pink-600 dark:text-pink-400">(18+)</span>}
-              {/* 单源卡片没有展开列表，画质只能在这里露出；失败态可点重试 */}
+              {/* 单 source卡片没有展开列表，画质只能在这里露出；失败态可点重试 */}
               {singleKey && (
                 <QualityBadge
                   entry={qualities[singleKey]}
@@ -209,22 +209,22 @@ export function AggregatedCard({
                 />
               )}
             </div>
-            <p className="text-xs text-muted line-clamp-2 mb-2">{group.remarks || '暂无介绍'}</p>
+            <p data-no-english className="text-xs text-muted line-clamp-2 mb-2">{group.remarks || 'No description available'}</p>
           </div>
           <div className="flex items-center justify-between gap-1.5 mt-auto pt-1.5 border-t border-line">
-            <span className="tag bg-chip text-muted truncate max-w-[80%]">
-              {multi ? `${group.items.length} 个来源` : group.items[0].sourceName}
+            <span data-no-english className="tag bg-chip text-muted truncate max-w-[80%]">
+              {multi ? `${group.items.length} sources` : group.items[0].sourceName}
             </span>
             {multi && (
               <span className="flex items-center gap-1 shrink-0">
-                {/* 收起态先给结论：最高画质比「N 个来源」更影响要不要点开 */}
+                {/* 收起态先给结论：最高画质比「N sources」更影响要不要点开 */}
                 {progress.best && (
                   <span
                     className="tag bg-accent/15 text-accent font-medium"
                     title={
                       progress.known < progress.total
-                        ? `已探到 / 实测的最高画质（${progress.known}/${progress.total} 个来源已有结论）`
-                        : '已探到 / 实测的最高画质'
+                        ? `Best detected quality (${progress.known}/${progress.total} sources checked)`
+                        : 'Best detected quality'
                     }
                   >
                     {progress.best}
@@ -249,25 +249,25 @@ export function AggregatedCard({
         <div className="border-t border-line p-2.5 animate-fade-in">
           <div className="flex items-baseline justify-between gap-2 mb-1.5">
             <p className="text-[10px] text-faint">
-              选择来源
-              {sharedRemarks ? ` · 均 ${sharedRemarks}` : ''}
+              Choose Source
+              {sharedRemarks ? ` · ${sharedRemarks}` : ''}
             </p>
             {progress.total > 0 &&
               (progress.done < progress.total ? (
                 <p className="text-[10px] text-faint tabular-nums">
-                  探测中 {progress.done}/{progress.total}
+                  Checking {progress.done}/{progress.total}
                 </p>
               ) : (
                 // 探完后「3/3」已经没有信息量，换成用户真正要的结论
                 <p className="text-[10px] text-accent tabular-nums">
-                  {progress.best ? `最高 ${progress.best}` : '未能探到画质'}
-                  {progress.failed > 0 ? ` · ${progress.failed} 源未探到` : ''}
+                  {progress.best ? `Best ${progress.best}` : 'Quality unavailable'}
+                  {progress.failed > 0 ? ` · ${progress.failed} sources unavailable` : ''}
                 </p>
               ))}
           </div>
           {/*
             单列全宽行：两列在卡片实际宽度（约 330px）下每列只剩 148px，
-            源名必截断，且源数为奇数时必然留半行空。一行内「源名 / 画质 / 集数 / 播放」
+            sources名必截断，且 source数为奇数时必然留半行空。一行内「 source名 / 画质 / Episodes / 」
             四段排开，信息密度更高也更容易纵向扫读。
           */}
           <div className="flex flex-col gap-1.5">
@@ -299,7 +299,7 @@ export function AggregatedCard({
                     e.stopPropagation();
                     onOpen(item);
                   }}
-                  aria-label={`使用 ${item.sourceName} 播放${label && !sharedRemarks ? `，${label}` : ''}`}
+                  aria-label={`Play from ${item.sourceName} ${label && !sharedRemarks ? `，${label}` : ''}`}
                 >
                   <span className="font-medium text-content truncate flex-1 min-w-0">{item.sourceName}</span>
                   <QualityBadge
@@ -309,7 +309,7 @@ export function AggregatedCard({
                     // 定宽 + 等宽数字：三行的 360P / 540P / 1080P 左缘对齐，不随字符数抖动
                     className="min-w-[3.25rem] justify-center tabular-nums"
                   />
-                  {/* 集数一致时已提到表头，逐行不再重复 */}
+                  {/* Episodes一致时已提到表头，逐行不再重复 */}
                   {!sharedRemarks && label && (
                     <span className="text-faint shrink-0 tabular-nums">{label}</span>
                   )}
@@ -375,17 +375,17 @@ export function VideoCard({ item, onClick }: { item: SearchResultItem; onClick: 
 
         <div className="p-2.5 flex flex-col flex-grow min-w-0">
           <div className="flex-grow">
-            <h3 className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={item.name}>
+            <h3 data-no-english className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={item.name}>
               {item.name}
             </h3>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {item.typeName && <span className="tag bg-accent/15 text-accent">{item.typeName}</span>}
+              {item.typeName && <span data-no-english className="tag bg-accent/15 text-accent">{item.typeName}</span>}
               {item.year && <span className="tag bg-purple-500/15 text-purple-600 dark:text-purple-300">{item.year}</span>}
             </div>
-            <p className="text-xs text-muted line-clamp-2 mb-2">{formatRemarks(item.remarks) || '暂无介绍'}</p>
+            <p data-no-english className="text-xs text-muted line-clamp-2 mb-2">{formatRemarks(item.remarks) || 'No description available'}</p>
           </div>
           <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-line">
-            <span className="tag bg-chip text-muted truncate max-w-[80%]">{item.sourceName}</span>
+            <span data-no-english className="tag bg-chip text-muted truncate max-w-[80%]">{item.sourceName}</span>
           </div>
         </div>
       </div>
@@ -393,7 +393,7 @@ export function VideoCard({ item, onClick }: { item: SearchResultItem; onClick: 
   );
 }
 
-/** 豆瓣推荐卡片（无来源徽章，点击直接搜索） */
+/** 豆瓣推荐卡片（无来 source徽章，点击直接搜索） */
 export function DoubanCard({ item, onClick }: { item: { title: string; cover: string; rating?: string }; onClick: () => void }) {
   const imageProxyMode = useAppStore((s) => s.imageProxyMode);
   const customImageProxy = useAppStore((s) => s.customImageProxy);

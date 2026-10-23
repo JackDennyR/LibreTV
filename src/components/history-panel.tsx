@@ -21,9 +21,9 @@ import { useToast } from './toast';
 import { resolveSource, useAppStore } from '@/lib/store';
 
 /**
- * 观看历史面板（IndexedDB 实时查询）。
+ * Watch History面板（IndexedDB 实时查询）。
  * 与旧版的区别：播放前按需重新拉取剧集详情，不再依赖历史记录里冗余存储的全集 URL。
- * 破坏性操作分级：清空全部走确认弹窗，删除单条支持撤销。
+ * 破坏性操作分级：清空全部走确认弹窗，Delete单条支持撤销。
  */
 
 /** 未搜索时列表默认展示的条数（DB 实存 MAX_HISTORY 条，其余靠搜索查阅） */
@@ -39,7 +39,7 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
   const [confirmClear, setConfirmClear] = useState(false);
   const [query, setQuery] = useState('');
 
-  // 关闭后重置搜索词：下次打开回到完整列表，不残留上次的过滤状态
+  // Close后重置搜索词：下次打开回到完整列表，不残留上次的过滤状态
   useEffect(() => {
     if (!open) setQuery('');
   }, [open]);
@@ -57,7 +57,7 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
     <Drawer
       open={open}
       onClose={onClose}
-      title="观看历史"
+      title="Watch History"
       width="max-w-lg"
       // 搜索框放在固定副标题栏：历史较长时滚动列表仍可随时改关键字
       subheader={
@@ -71,17 +71,17 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
               <input
                 type="text"
                 className="w-full h-9 pl-8 pr-8 rounded-lg border border-line bg-chip text-sm text-content placeholder:text-faint focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/40"
-                placeholder="搜索观看历史..."
+                placeholder="Search watch history..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                aria-label="搜索观看历史"
+                aria-label="Search Watch History"
               />
               {query && (
                 <button
                   type="button"
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-faint hover:text-content hover:bg-hover transition-colors"
                   onClick={() => setQuery('')}
-                  aria-label="清空搜索"
+                  aria-label="Clear Search"
                 >
                   <Icon name="close" className="w-3.5 h-3.5" />
                 </button>
@@ -91,7 +91,7 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
               className="shrink-0 px-2 py-1.5 rounded-md text-xs text-faint hover:text-danger hover:bg-hover transition-colors"
               onClick={() => setConfirmClear(true)}
             >
-              清空历史
+              Clear History
             </button>
           </div>
         ) : undefined
@@ -100,14 +100,14 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
       {!history ? (
         <LoadingState />
       ) : total === 0 ? (
-        <EmptyState variant="plain" title="暂无观看记录" />
+        <EmptyState variant="plain" title="No Watch History" />
       ) : visible.length === 0 ? (
-        <EmptyState variant="plain" title={`没有匹配「${query.trim()}」的观看记录`} />
+        <EmptyState variant="plain" title={`No watch history matches “${query.trim()}”`} />
       ) : (
         <>
           {!keyword && total > VISIBLE_LIMIT && (
             <p className="text-xs text-faint mb-2">
-              共 {total} 条记录，仅显示最近 {VISIBLE_LIMIT} 条，可用上方搜索查找更早的记录
+              Showing the most recent {VISIBLE_LIMIT} of {total} entries. Search above to find older history.
             </p>
           )}
           <ul className="space-y-2">
@@ -122,12 +122,12 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
       <ConfirmDialog
         open={confirmClear}
         danger
-        title="清空全部观看历史？"
-        message={history ? `将删除 ${history.length} 条观看记录，此操作不可撤销。` : undefined}
-        confirmLabel="清空"
+        title="Clear all watch history?"
+        message={history ? `Delete ${history.length} watch history entries? This cannot be undone.` : undefined}
+        confirmLabel="Clear All"
         onCancel={() => setConfirmClear(false)}
         onConfirm={() => {
-          void clearAllHistory().then(() => toast('观看历史已清空', 'success'));
+          void clearAllHistory().then(() => toast('Watch history cleared', 'success'));
           setConfirmClear(false);
         }}
       />
@@ -161,9 +161,9 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
   const remove = () => {
     void removeHistory(item.sourceKey, item.vodId).then(() => {
       // 轻操作：给撤销窗口，恢复时写回原记录
-      toast('已删除该记录', 'info', {
+      toast('History entry removed', 'info', {
         action: {
-          label: '撤销',
+          label: 'Undo',
           onClick: () => {
             void upsertHistory({
               sourceKey: item.sourceKey,
@@ -176,7 +176,7 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
               playbackPosition: item.playbackPosition,
               duration: item.duration,
               timestamp: item.timestamp,
-            }).then(() => toast('已恢复', 'success'));
+            }).then(() => toast('Restored', 'success'));
           },
         },
       });
@@ -213,7 +213,7 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-content truncate">{item.title}</div>
             <div className="text-xs text-faint mt-0.5 flex items-center gap-1.5 flex-wrap">
-              {item.totalEpisodes > 0 && <span>第 {item.episodeIndex + 1}/{item.totalEpisodes} 集</span>}
+              {item.totalEpisodes > 0 && <span>Episode {item.episodeIndex + 1}/{item.totalEpisodes}</span>}
               {hasPercent && <span>· {formatTime(item.playbackPosition)}</span>}
               <span>· {formatRelativeTime(item.timestamp)}</span>
             </div>
@@ -230,8 +230,8 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
           'absolute right-2 top-2 p-2 rounded-full text-faint hover:text-danger',
           'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity'
         )}
-        aria-label="删除记录"
-        title="删除记录（可在提示中撤销）"
+        aria-label="Delete entry"
+        title="Delete entry (undo available)"
         onClick={remove}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
