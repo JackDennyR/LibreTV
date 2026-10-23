@@ -29,6 +29,8 @@ export interface SearchResultItem {
 
 export interface VideoInfo {
   title?: string;
+  /** Latin-script alternative movie title from the provider, suitable for subtitle lookup. */
+  subtitleTitle?: string;
   cover?: string;
   desc?: string;
   typeName?: string;

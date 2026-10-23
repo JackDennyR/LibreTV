@@ -314,11 +314,12 @@ function WatchContent() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
           <div>
-            <div ref={playerFrameRef} className="aspect-video bg-black rounded-lg overflow-hidden">
+            <div ref={playerFrameRef} className="relative z-20 aspect-video bg-black rounded-lg">
               {currentUrl ? (
                 <PlayerShell
                   url={currentUrl}
                   title={videoTitle}
+                  subtitleSearchTitle={detailQuery.data?.videoInfo?.subtitleTitle}
                   adFilter={store.adFilter}
                   autoplayNext={store.autoplayNext}
                   skipMark={skipMark}
