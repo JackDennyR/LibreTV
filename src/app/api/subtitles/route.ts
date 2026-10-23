@@ -46,8 +46,13 @@ export async function GET(req: Request) {
     for (const entry of Array.isArray(data.data) ? data.data : []) {
       const attr = entry.attributes;
       if (!attr || attr.language !== language) continue;
+      // OpenSubtitles commonly omits the file extension even for valid SRT
+      // files (e.g. "Jack Reacher Never Go Back 2016 HD-T"). The API's
+      // numeric file_id, not its display filename, identifies the subtitle.
+      // Never accept archives: the download route validates subtitle text.
       const file = Array.isArray(attr.files) ? attr.files.find((f) =>
-        Number.isSafeInteger(f.file_id) && Number(f.file_id) > 0 && /\.(srt|vtt)$/i.test(String(f.file_name || ''))
+        Number.isSafeInteger(f.file_id) && Number(f.file_id) > 0 &&
+        !/\.(?:zip|rar|7z|tar|gz)$/i.test(String(f.file_name || ''))
       ) : undefined;
       if (!file) continue;
       results.push({
@@ -90,7 +95,9 @@ export async function POST(req: Request) {
       return errorResponse(502, 'Untrusted subtitle download location.');
     }
     const file = await fetchUpstream(link.href, { timeoutMs: 8000 });
-    if (!file.ok) return errorResponse(502, 'Subtitle file is unavailable.');
+    if (!file.ok) return errorResponse(502, file.status === 403
+      ? 'OpenSubtitles blocked this subtitle download (HTTP 403). Try another release or upload a subtitle file.'
+      : 'Subtitle file is unavailable. Try another release or upload a subtitle file.');
     if (Number(file.headers.get('content-length')) > MAX_FILE_BYTES) return errorResponse(413, 'Subtitle exceeds 1 MB.');
     const raw = await file.arrayBuffer();
     if (raw.byteLength > MAX_FILE_BYTES) return errorResponse(413, 'Subtitle exceeds 1 MB.');
