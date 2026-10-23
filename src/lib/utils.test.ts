@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildImageCandidates, buildImageUrl } from './utils';
+import { buildImageCandidates, buildImageUrl, buildWatchUrl } from './utils';
 
 describe('buildImageUrl', () => {
   it('proxy 模式走查询串形式（路径形式会被 EdgeOne 等网关归一化破坏）', () => {
@@ -61,5 +61,27 @@ describe('buildImageCandidates', () => {
   it('custom 模式为单一候选（模板错误显式暴露，不静默回退）', () => {
     expect(buildImageCandidates(DOUBAN, 'custom', 'https://p.example.com/?u=')).toHaveLength(1);
     expect(buildImageCandidates(undefined, 'direct', '')).toEqual([]);
+  });
+});
+
+describe('buildWatchUrl sharing', () => {
+  it('creates a single shareable LibreTV watch URL for a movie with two stream variants', () => {
+    const watchPath = buildWatchUrl({
+      sourceKey: 'bfzy',
+      vodId: '39018',
+      index: 0,
+      title: '侠探杰克：永不回头',
+      sourceUrl: 'https://bfzyapi.com/api.php/provide/vod',
+    });
+    const shared = new URL(watchPath, 'https://libretv.example.com');
+    expect(shared.origin).toBe('https://libretv.example.com');
+    expect(shared.pathname).toBe('/watch');
+    expect(shared.searchParams.get('id')).toBe('39018');
+    expect(shared.searchParams.get('sourceUrl')).toBe('https://bfzyapi.com/api.php/provide/vod');
+    expect(shared.searchParams.get('title')).toBe('侠探杰克：永不回头');
+    expect(shared.searchParams.get('index')).toBe('0');
+    // It must NOT be a multiline collection of raw .m3u8 playlists.
+    expect(shared.searchParams.has('url')).toBe(false);
+    expect(shared.href).not.toContain('.m3u8');
   });
 });
