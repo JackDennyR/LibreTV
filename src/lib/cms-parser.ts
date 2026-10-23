@@ -99,8 +99,15 @@ export function parseDetail(
     episodes,
     videoInfo: {
       title: str(vod.vod_name),
+      // BFZY may mix Chinese aliases and English names in one space-delimited
+      // field, e.g. "神隐任务：永不回头(台)  Jack Reacher 2  谍影侠探".
+      // Extract only the Latin-script title instead of sending the entire
+      // mixed-language description to OpenSubtitles as a search query.
       subtitleTitle: typeof vod.vod_sub === 'string'
-        ? vod.vod_sub.split(/[,，、;|/]+/u).map((part) => part.trim()).find((part) => /[a-zA-Z]{3}/.test(part))?.slice(0, 120)
+        ? vod.vod_sub.match(/[A-Za-z][A-Za-z0-9 .:'’!?&()\-]{2,}/g)
+          ?.map((part) => part.replace(/^[\s.,:;()\-]+|[\s.,:;()\-]+$/g, '').trim())
+          .find((part) => /[A-Za-z]{3}/.test(part))
+          ?.slice(0, 120)
         : undefined,
       cover: str(vod.vod_pic),
       desc: str(vod.vod_content),
