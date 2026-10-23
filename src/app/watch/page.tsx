@@ -319,6 +319,7 @@ function WatchContent() {
                 <PlayerShell
                   url={currentUrl}
                   title={videoTitle}
+                  subtitleSearchTitle={detailQuery.data?.videoInfo?.subtitleTitle}
                   adFilter={store.adFilter}
                   autoplayNext={store.autoplayNext}
                   skipMark={skipMark}

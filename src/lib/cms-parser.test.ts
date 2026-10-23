@@ -122,6 +122,15 @@ describe('parseDetail', () => {
     expect(detail.videoInfo.sourceName).toBe('测试源');
   });
 
+  it('picks the provider English alias as a default subtitle lookup title', () => {
+    const data = { list: [{
+      vod_name: '侠探杰克第一季',
+      vod_sub: '游侠杰克,神隐任务,Jack Reacher',
+      vod_play_url: '1$https://cdn.example.com/1.m3u8',
+    }] };
+    expect(parseDetail(data, source).videoInfo.subtitleTitle).toBe('Jack Reacher');
+  });
+
   it('play_url 为空时从简介兜底', () => {
     const data = { list: [{ vod_name: 'X', vod_content: '$https://cdn/fall.m3u8' }] };
     const detail = parseDetail(data, source);

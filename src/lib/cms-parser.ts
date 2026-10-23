@@ -99,6 +99,9 @@ export function parseDetail(
     episodes,
     videoInfo: {
       title: str(vod.vod_name),
+      subtitleTitle: typeof vod.vod_sub === 'string'
+        ? vod.vod_sub.split(/[,，、;|/]+/u).map((part) => part.trim()).find((part) => /[a-zA-Z]{3}/.test(part))?.slice(0, 120)
+        : undefined,
       cover: str(vod.vod_pic),
       desc: str(vod.vod_content),
       typeName: str(vod.type_name),

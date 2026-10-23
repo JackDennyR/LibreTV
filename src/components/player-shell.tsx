@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import Artplayer from 'artplayer';
 import Hls, { type HlsConfig } from 'hls.js';
+import { SubtitleControls } from './subtitle-controls';
+import { languageName, type SubtitleLanguage } from '@/lib/subtitles';
 
 import { PlaybackRecovery, describeHlsError } from '@/lib/playback-recovery';
 import { createHlsLoader } from '@/lib/hls-loader';
@@ -57,6 +59,8 @@ export interface PlayerSkipApi {
 interface PlayerShellProps {
   url: string;
   title: string;
+  /** Alternative original/English title from source metadata for subtitle lookup. */
+  subtitleSearchTitle?: string;
   adFilter: boolean;
   autoplayNext: boolean;
   /** 当前剧的跳过片段标记（父级按归一化剧名查好后传入，换集/换源不变） */
@@ -102,6 +106,7 @@ interface PlayerShellProps {
 export function PlayerShell({
   url,
   title,
+  subtitleSearchTitle,
   adFilter,
   autoplayNext,
   skipMark,
@@ -128,6 +133,7 @@ export function PlayerShell({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const artRef = useRef<any>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const subtitleBlobRef = useRef<string | null>(null);
   const [error, setError] = useState('');
   const [hint, setHint] = useState('');
   // 起播前的品牌占位图（沿用旧版 nomedia 素材），实际开始播放后隐藏
@@ -485,6 +491,28 @@ export function PlayerShell({
     const art = artRef.current;
     if (!art) return;
     setupHls(art.video, targetUrl, true);
+  };
+
+  const disableSubtitles = () => {
+    const art = artRef.current;
+    if (art?.subtitle.textTrack) art.subtitle.textTrack.mode = 'disabled';
+    if (subtitleBlobRef.current) URL.revokeObjectURL(subtitleBlobRef.current);
+    subtitleBlobRef.current = null;
+  };
+
+  const applySubtitles = async (vtt: string, language: SubtitleLanguage) => {
+    const art = artRef.current;
+    if (!art) throw new Error('Player is not ready yet.');
+    const next = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt;charset=utf-8' }));
+    try {
+      await art.subtitle.switch(next, { type: 'vtt', name: languageName(language) });
+      if (art.subtitle.textTrack) art.subtitle.textTrack.mode = 'hidden';
+      if (subtitleBlobRef.current) URL.revokeObjectURL(subtitleBlobRef.current);
+      subtitleBlobRef.current = next;
+    } catch {
+      URL.revokeObjectURL(next);
+      throw new Error('Could not activate this subtitle track.');
+    }
   };
 
   // —— 创建播放器（仅一次，挂载即创建） ——
@@ -911,6 +939,8 @@ export function PlayerShell({
       Artplayer.CONTROL_HIDE_TIME = ART_DEFAULT_CONTROL_HIDE_MS;
       hlsRef.current?.destroy();
       hlsRef.current = null;
+      if (subtitleBlobRef.current) URL.revokeObjectURL(subtitleBlobRef.current);
+      subtitleBlobRef.current = null;
       recoveryRef.current?.dispose();
       getVideoPrefetcher().stop();
       // 播放页可能仍持有读取接口：销毁前显式置空，避免「记录当前」读到已销毁实例
@@ -976,6 +1006,7 @@ export function PlayerShell({
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" style={{ WebkitTouchCallout: 'none' }} />
+      <SubtitleControls title={subtitleSearchTitle || title} episodeKey={episodeKey || url} onApply={applySubtitles} onDisable={disableSubtitles} />
       {showPoster && !error && (
         <div
           className="absolute inset-0 bg-black pointer-events-none"
