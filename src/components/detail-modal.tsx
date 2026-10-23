@@ -130,9 +130,19 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
   };
 
   const copyLinks = async () => {
-    if (!detail) return;
-    const ok = await copyToClipboard(detail.episodes.join('\n'));
-    if (ok) toast('Playback URL copied', 'success');
+    if (!detail?.episodes.length) return;
+    // A browser address bar joins multiple pasted lines into one invalid URL.
+    // Share the LibreTV watch page instead of raw HLS playlists, which may
+    // require the app's player, headers, or server proxy to play correctly.
+    const watchPath = buildWatchUrl({
+      sourceKey: item.sourceKey,
+      vodId: item.vodId,
+      index: 0,
+      title: item.name,
+      sourceUrl: item.sourceUrl,
+    });
+    const ok = await copyToClipboard(new URL(watchPath, window.location.origin).href);
+    if (ok) toast('Watch link copied', 'success');
     else toast('Copy failed. Check your browser permissions.', 'error');
   };
 

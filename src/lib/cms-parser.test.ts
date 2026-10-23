@@ -86,6 +86,16 @@ describe('extractEpisodesFromPlayUrl', () => {
     expect(extractEpisodesFromPlayUrl(play)).toEqual(['https://cdn/a.mp4']);
   });
 
+  it('BFZY: keeps alternative audio streams as separate episode URLs', () => {
+    const raw =
+      'HD国语$https://p.example.com/video/reacher/HD国语/index.m3u8' +
+      '#HD原声$https://p.example.com/video/reacher/HD原声/index.m3u8';
+    expect(extractEpisodesFromPlayUrl(raw)).toEqual([
+      'https://p.example.com/video/reacher/HD国语/index.m3u8',
+      'https://p.example.com/video/reacher/HD原声/index.m3u8',
+    ]);
+  });
+
   it('空输入返回空数组', () => {
     expect(extractEpisodesFromPlayUrl('')).toEqual([]);
   });
