@@ -1005,7 +1005,7 @@ export function PlayerShell({
 
   return (
     <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full" style={{ WebkitTouchCallout: 'none' }} />
+      <div ref={containerRef} className="w-full h-full rounded-lg overflow-hidden" style={{ WebkitTouchCallout: 'none' }} />
       <SubtitleControls title={subtitleSearchTitle || title} episodeKey={episodeKey || url} onApply={applySubtitles} onDisable={disableSubtitles} />
       {showPoster && !error && (
         <div
