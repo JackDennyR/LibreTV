@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       return fail(400,'Invalid year');
     }
     const page = body.page === undefined ? 1 : body.page;
-    if (!Number.isSafeInteger(page) || page < 1 || page > 50) return fail(400,'Invalid page');
+    if (!Number.isSafeInteger(page) || page < 1 || page > 300) return fail(400,'Invalid page');
     const responses = await Promise.all(genre.typeIds.slice(0,5).map(async (typeId) => {
       const url = new URL(source.url);
       url.searchParams.set('ac','videolist');
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       const res = await fetchUpstream(url.href, {timeoutMs:9000,headers:cmsRequestHeaders()});
       if (!res.ok) throw new Error('Source failed (HTTP ' + res.status + ')');
       const json = await res.json() as {pagecount?:unknown;list?:unknown};
-      const maxPage = Math.min(50, Math.max(1,Number(json.pagecount)||1));
+      const maxPage = Math.min(300, Math.max(1,Number(json.pagecount)||1));
       return {list:parseSearchList(json,source), pageCount:maxPage};
     }));
     const seen = new Set<string>();

@@ -417,7 +417,7 @@ function HomeContent() {
         )}
 
         {!urlQuery && selectedSources.length > 0 && (
-          <BrowseSection sources={selectedSources} onOpen={setDetailItem} />
+          <BrowseSection sources={selectedSources} onOpen={setDetailItem} onFind={runSearch} />
         )}
 
         {/* 首页推荐(有搜索时隐藏) */}
