@@ -73,10 +73,10 @@ function UpdateTip({ update }: { update: UpstreamUpdate | null }) {
     update === null
       ? null
       : update.status === 'newer'
-        ? `发现新版本 v${update.latest}`
+        ? `New version available: v${update.latest}`
         : update.status === 'latest'
-          ? '已是最新版本'
-          : '正在检测更新…';
+          ? 'You are up to date'
+          : 'Checking for updates…';
   if (!tip) return null;
   return (
     <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-chip px-2 py-1 text-faint shadow-sm group-hover:block">

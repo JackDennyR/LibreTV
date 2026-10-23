@@ -21,7 +21,7 @@ import { SiteFooter } from '@/components/site-footer';
  * 首页：搜索（URL ?s= 驱动，可后退/分享）+ 豆瓣推荐。
  * 搜索状态由 React Query 管理，失败源在结果区顶部以非阻塞方式展示。
  */
-/** 搜索结果分批渲染的批大小：一次挂载上千张卡片会明显掉帧 */
+/** Search Results分批渲染的批大小：一次挂载上千张卡片会明显掉帧 */
 const RESULT_PAGE_SIZE = 60;
 
 export default function HomePage() {
@@ -37,7 +37,7 @@ function HomeContent() {
   const router = useRouter();
   const { toast } = useToast();
   const urlQuery = searchParams.get('s') || '';
-  // 精确订阅所需字段（对齐 live 页的做法）：搜索流式期间逐源写健康度、
+  // 精确订阅所需字段（对齐 live 页的做法 ): 搜索流式期间逐源写健康度、
   // 打开设置抽屉/历史面板等无关 store 变化，都不应触发首页整树重渲染
   const customAPIs = useAppStore((s) => s.customAPIs);
   const envSources = useAppStore((s) => s.envSources);
@@ -103,8 +103,8 @@ function HomeContent() {
           for (const ev of useAppStore.getState().recordSourceHealth([outcome])) {
             toast(
               ev.permanent
-                ? `「${sourceName(ev.key)}」多次失败，已停止参与搜索，可在设置中恢复`
-                : `「${sourceName(ev.key)}」连续超时/失败，已停用 ${formatDisableTtl(ev.ttlMs ?? 0)}`,
+                ? `「${sourceName(ev.key)}」failed repeatedly and was excluded from searches. Restore it in Settings.`
+                : `「${sourceName(ev.key)}」has timed out or failed repeatedly and is disabled for ${formatDisableTtl(ev.ttlMs ?? 0)}`,
               'warning'
             );
           }
@@ -122,12 +122,12 @@ function HomeContent() {
   const runSearch = (q: string) => {
     const query = q.trim().slice(0, 100);
     if (!query) {
-      toast('请输入搜索内容', 'info');
+      toast('Enter a search query', 'info');
       inputRef.current?.focus();
       return;
     }
     if (selectedSources.length === 0) {
-      toast('请先在设置中添加并勾选点播源', 'warning');
+      toast('Add and enable a movie source in Settings first', 'warning');
       return;
     }
     router.push(`/?s=${encodeURIComponent(query)}`, { scroll: false });
@@ -154,7 +154,7 @@ function HomeContent() {
     searchQuery.data?.failures ??
     streamedOutcomes
       .filter((o) => !o.ok)
-      .map((o) => ({ sourceKey: o.sourceKey, error: o.error || '请求失败', timedOut: o.timedOut }));
+      .map((o) => ({ sourceKey: o.sourceKey, error: o.error || 'Request failed', timedOut: o.timedOut }));
   // 跨源同名聚合：同名影片合并为一张卡片，展开后可选择具体来源
   const groups = useMemo(() => aggregateResults(list), [list]);
 
@@ -187,7 +187,7 @@ function HomeContent() {
               <h1 className="text-4xl sm:text-5xl font-bold brand-gradient">LibreTV</h1>
             </header>
           )}
-          {urlQuery && <h1 className="sr-only">LibreTV 视频搜索</h1>}
+          {urlQuery && <h1 className="sr-only">LibreTV video search</h1>}
           {/* 定位容器比胶囊宽一圈：浮层按它的宽度对齐，接缝处不会与胶囊边框错位 1px */}
           <div ref={searchHistory.containerRef} className="relative w-full max-w-2xl">
             <form
@@ -201,7 +201,7 @@ function HomeContent() {
                   下拉展开时改为「上圆下直」并隐去底边，与下方浮层拼成同一个面板 */}
               <div
                 className={cn(
-                  // 12px 圆角矩形（非胶囊）：收起态与展开态共用同一组上圆角，
+                  // 12px 圆角矩形（非胶囊 ): 收起态与展开态共用同一组上圆角，
                   // 展开时输入框这部分形状完全不发生变化，上下圆角也与下拉保持一致；
                   // 右侧与上下不留内边距，由搜索按钮拉伸填满、与搜索框边缘贴合
                   'flex items-stretch min-h-12 pl-4 border',
@@ -216,7 +216,7 @@ function HomeContent() {
                 <input
                   ref={inputRef}
                   className="flex-1 min-w-0 pr-2 bg-transparent text-sm text-content placeholder:text-faint focus:outline-none"
-                  placeholder="输入影片名称..."
+                  placeholder="Search for a movie or series..."
                   value={input}
                   maxLength={100}
                   onChange={(e) => {
@@ -226,7 +226,7 @@ function HomeContent() {
                   onFocus={searchHistory.onFocus}
                   onKeyDown={(e) => searchHistory.onKeyDown(e, pickHistory)}
                   role="combobox"
-                  aria-label="搜索影片"
+                  aria-label="Search Movies"
                   aria-expanded={searchHistory.visible}
                   aria-controls="home-search-history"
                   aria-autocomplete="list"
@@ -245,7 +245,7 @@ function HomeContent() {
                       searchHistory.resetActive();
                       inputRef.current?.focus();
                     }}
-                    aria-label="清空"
+                    aria-label="Clear"
                   >
                     <Icon name="close" className="w-4 h-4" />
                   </button>
@@ -280,12 +280,12 @@ function HomeContent() {
           </div>
         </section>
 
-        {/* 搜索结果 */}
+        {/* Search Results */}
         {urlQuery && (
-          <section aria-label="搜索结果" className="mb-10">
+          <section aria-label="Search Results" className="mb-10">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm text-muted">
-                “<span className="text-content">{urlQuery}</span>” 的搜索结果
+                “<span className="text-content">{urlQuery}</span>” search results
                 {isSearching ? (
                   <span className="text-faint">
                     （已就绪 {streamedOutcomes.length}/{selectedSources.length} 个源…）
@@ -293,7 +293,7 @@ function HomeContent() {
                 ) : (
                   searchQuery.data && (
                     <span className="text-faint">
-                      （{groups.length} 部影片 · {list.length} 条结果{failures.length > 0 && `，${failures.length} 个源失败`}）
+                      （{groups.length} movies · {list.length} results{failures.length > 0 && `，${failures.length} sources failed`}）
                     </span>
                   )
                 )}
@@ -302,11 +302,11 @@ function HomeContent() {
 
             {failures.length > 0 && (
               <div className="mb-3 text-xs bg-chip rounded-lg px-3 py-2 flex flex-wrap gap-x-3 gap-y-1">
-                <span className="text-faint">{isSearching ? '以下源暂时无响应：' : '部分点播源请求失败：'}</span>
+                <span className="text-faint">{isSearching ? 'These sources are not responding:' : 'Some movie sources failed:'}</span>
                 {failures.map((f) => (
                   <span key={f.sourceKey} className={f.timedOut ? 'text-warning' : 'text-faint'}>
                     {f.timedOut ? '⏱' : '✗'} {sourceName(f.sourceKey)}
-                    {f.timedOut ? ' 超时' : ''}
+                    {f.timedOut ? ' timed out' : ''}
                   </span>
                 ))}
               </div>
@@ -315,13 +315,13 @@ function HomeContent() {
             {disabledSources.length > 0 && (
               <div className="mb-3 text-xs text-faint bg-chip rounded-lg px-3 py-2">
                 {disabledSources.length} 个源因连续超时/失败已暂停参与搜索（临时停用的到期自动恢复，
-                长期停用的需在设置中手动恢复）：{disabledSources.map((key) => sourceName(key)).join('、')}
+                Permanently disabled sources must be restored in Settings ): {disabledSources.map((key) => sourceName(key)).join('、')}
               </div>
             )}
 
             {offSubscriptionSources.length > 0 && (
               <div className="mb-3 text-xs text-faint bg-chip rounded-lg px-3 py-2">
-                {offSubscriptionSources.length} 个源所属的订阅已停用，未参与本次搜索（在设置 → 数据源订阅中可重新启用）：
+                {offSubscriptionSources.length} 个源所属的订阅已停用，未参与本次搜索（在设置 → 数据源订阅中可重新启用 ): 
                 {offSubscriptionSources.map((key) => sourceName(key)).join('、')}
               </div>
             )}
@@ -356,8 +356,8 @@ function HomeContent() {
             ) : (
               <EmptyState
                 icon="search"
-                title="没有找到匹配的结果"
-                description="请尝试其他关键词或更换点播源"
+                title="No matching results"
+                description="Try a different keyword or movie source"
                 className="!py-16"
               />
             )}
@@ -404,14 +404,14 @@ function ResultsSkeleton() {
 function NoSourceGuide({ hasSources = false }: { hasSources?: boolean }) {
   return (
     <div className="border border-dashed border-line rounded-xl p-10 text-center max-w-lg mx-auto">
-      <h3 className="text-content font-medium mb-2">{hasSources ? '尚未勾选点播源' : '先添加一个点播源'}</h3>
+      <h3 className="text-content font-medium mb-2">{hasSources ? 'No movie sources selected' : 'Add a movie source to begin'}</h3>
       <p className="text-sm text-muted leading-relaxed">
         {hasSources ? (
-          <>点击右上角「设置」，勾选要参与搜索的点播源后重新搜索。</>
+          <>Open Settings, select the movie sources you want to search, and try again.</>
         ) : (
           <>
             LibreTV 不内置任何采集站。点击右上角「设置 → 添加 API」，填入一个
-            Apple CMS 采集站地址（如 <code className="text-accent text-xs">https://example.com/api.php/provide/vod</code>），
+            Apple CMS API URL (for example <code className="text-accent text-xs">https://example.com/api.php/provide/vod</code>），
             勾选后即可开始搜索。
           </>
         )}

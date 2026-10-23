@@ -7,9 +7,9 @@ import type { QualityEntry } from '@/lib/types';
 /**
  * 画质徽章：四态外观与 tooltip 都来自 describeQualityBadge（纯函数，可单测）。
  *
- * 「未探到」与「未知」在数据上都是没有 height，但含义相反：
+ * 「未探到」与「Unknown」在数据上都是没有 height，但含义相反：
  * 前者是请求失败可以重试，后者是源站本来就不给信息（单码率/直链）。
- * 所以失败态用琥珀色并渲染为可点击的 button；未知态保持灰 chip 且不可点。
+ * 所以失败态用琥珀色并渲染为可点击的 button；Unknown态保持灰 chip 且不可点。
  */
 export function QualityBadge({
   entry,
@@ -34,7 +34,7 @@ export function QualityBadge({
       <span
         className={cn('tag bg-chip text-faint shrink-0 animate-pulse', className)}
         title={view.title}
-        aria-label="正在探测画质"
+        aria-label="Checking video quality"
       >
         …
       </span>
@@ -75,9 +75,9 @@ export function QualityBadge({
           className
         )}
         title={view.title}
-        aria-label={`本次没测到画质${view.reason ? `（${view.reason}）` : ''}，点击重试`}
+        aria-label={`Unable to detect quality${view.reason ? `（${view.reason}）` : ''}, click to retry`}
       >
-        {view.label ?? '未测到'}
+        {view.label ?? 'Not Detected'}
         {showReason && view.reason && <span className="ml-0.5 opacity-80">·{view.reason}</span>}
       </button>
     );
@@ -88,7 +88,7 @@ export function QualityBadge({
       className={cn('tag shrink-0', view.kind === 'failed' ? 'bg-warning/15 text-warning' : 'bg-chip text-faint', className)}
       title={view.title}
     >
-      {view.kind === 'failed' ? view.label ?? '未测到' : '未知'}
+      {view.kind === 'failed' ? view.label ?? 'Not Detected' : 'Unknown'}
       {showReason && view.reason && <span className="ml-0.5 opacity-80">·{view.reason}</span>}
     </span>
   );

@@ -25,7 +25,7 @@ export function RecommendSection({ onPick }: { onPick: (title: string) => void }
 
 /**
  * 豆瓣推荐：影视切换 + 标签筛选。
- * 一次性渲染全部条目：数据本就一次拉全（50 条），卡片图片又是 lazy 加载，
+ * 一次性渲染All条目：数据本就一次拉全（50 条），卡片图片又是 lazy 加载，
  * 视口外的图不会请求，因此不需要「加载更多」这类本地切片分页来打断浏览。
  */
 function DoubanView({ onPick }: { onPick: (title: string) => void }) {
@@ -47,15 +47,15 @@ function DoubanView({ onPick }: { onPick: (title: string) => void }) {
   };
 
   return (
-    <section aria-label="影视推荐">
+    <section aria-label="Movie and TV recommendations">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="flex bg-chip rounded-lg p-0.5">
             <TypeButton active={type === 'movie'} onClick={() => switchType('movie')}>
-              电影
+              Movies
             </TypeButton>
             <TypeButton active={type === 'tv'} onClick={() => switchType('tv')}>
-              剧集
+              TV Series
             </TypeButton>
           </div>
         </div>
@@ -77,11 +77,11 @@ function DoubanView({ onPick }: { onPick: (title: string) => void }) {
       </div>
 
       {query.isError ? (
-        <p className="text-center text-sm text-faint py-8">推荐内容加载失败，可稍后重试或在设置中关闭</p>
+        <p className="text-center text-sm text-faint py-8">Could not load recommendations. Try again later or disable recommendations in Settings.</p>
       ) : query.isLoading ? (
         <GridSkeleton />
       ) : items.length === 0 ? (
-        <p className="text-center text-sm text-faint py-8">该分类暂无推荐内容</p>
+        <p className="text-center text-sm text-faint py-8">No recommendations for this category.</p>
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">
           {items.map((item) => (
@@ -110,10 +110,10 @@ function BangumiView({ onPick }: { onPick: (title: string) => void }) {
   }
 
   return (
-    <section aria-label="新番放送推荐">
+    <section aria-label="New anime schedule">
       <div className="flex flex-wrap gap-1.5 mb-4">
         <ChipButton active={weekday === 'all'} onClick={() => setWeekday('all')}>
-          全部
+          All
         </ChipButton>
         {WEEKDAYS.map((name, i) => (
           <ChipButton key={name} active={weekday === i + 1} onClick={() => setWeekday(i + 1)}>
@@ -123,7 +123,7 @@ function BangumiView({ onPick }: { onPick: (title: string) => void }) {
       </div>
 
       {query.isError ? (
-        <p className="text-center text-sm text-faint py-8">推荐内容加载失败，可稍后重试或在设置中关闭</p>
+        <p className="text-center text-sm text-faint py-8">Could not load recommendations. Try again later or disable recommendations in Settings.</p>
       ) : query.isLoading ? (
         <GridSkeleton />
       ) : (
@@ -138,15 +138,15 @@ function BangumiView({ onPick }: { onPick: (title: string) => void }) {
 }
 
 const HOT_LISTS = [
-  { id: 'douban_movie_weekly', label: '电影周榜' },
-  { id: 'douban_tv_chinese', label: '国产剧周榜' },
-  { id: 'douban_tv_global', label: '海外剧周榜' },
-  { id: 'douban_show_chinese', label: '国内综艺' },
-  { id: 'douban_show_global', label: '海外综艺' },
-  { id: 'baidu_teleplay', label: '百度热播剧' },
+  { id: 'douban_movie_weekly', label: 'Weekly Movies' },
+  { id: 'douban_tv_chinese', label: 'Weekly Chinese TV' },
+  { id: 'douban_tv_global', label: 'Weekly International TV' },
+  { id: 'douban_show_chinese', label: 'Chinese Variety' },
+  { id: 'douban_show_global', label: 'International Variety' },
+  { id: 'baidu_teleplay', label: 'Trending TV' },
 ];
 
-/** 影视热榜（60s API）：豆瓣五个周榜 + 百度热播剧，chips 切换 */
+/** 影视热榜（60s API）：豆瓣五个周榜 + Trending TV，chips 切换 */
 function HotListView({ onPick }: { onPick: (title: string) => void }) {
   const [listId, setListId] = useState(HOT_LISTS[0].id);
 
@@ -158,7 +158,7 @@ function HotListView({ onPick }: { onPick: (title: string) => void }) {
   const items = query.data?.items ?? [];
 
   return (
-    <section aria-label="影视榜单推荐">
+    <section aria-label="Movie and TV charts">
       <div className="flex flex-wrap gap-1.5 mb-4">
         {HOT_LISTS.map((l) => (
           <ChipButton key={l.id} active={listId === l.id} onClick={() => setListId(l.id)}>
@@ -168,7 +168,7 @@ function HotListView({ onPick }: { onPick: (title: string) => void }) {
       </div>
 
       {query.isError ? (
-        <p className="text-center text-sm text-faint py-8">推荐内容加载失败，可稍后重试或在设置中关闭</p>
+        <p className="text-center text-sm text-faint py-8">Could not load recommendations. Try again later or disable recommendations in Settings.</p>
       ) : query.isLoading ? (
         <GridSkeleton />
       ) : (

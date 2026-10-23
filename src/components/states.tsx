@@ -81,7 +81,7 @@ export function EmptyState({
 export function ErrorState({
   message,
   onRetry,
-  retryLabel = '重试',
+  retryLabel = 'Retry',
   tone = 'default',
   className,
 }: {

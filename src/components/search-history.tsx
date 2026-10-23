@@ -11,7 +11,7 @@ import { Icon } from './icon';
 const HISTORY_LIMIT = 10;
 
 /**
- * 「最近搜索」下拉的交互逻辑：聚焦展开、输入时按关键字过滤（浏览器地址栏式交互）。
+ * 「Recent Searches」下拉的交互逻辑：聚焦展开、输入时按关键字过滤（浏览器地址栏式交互）。
  * 首页搜索框与顶栏搜索框共用本 hook 与下方 SearchHistoryDropdown，避免两处实现分叉。
  */
 export function useSearchHistory(input: string) {
@@ -68,10 +68,10 @@ export function useSearchHistory(input: string) {
     close();
     await clearSearchHistory();
     await history.refetch();
-    // 轻量破坏性操作：给一次撤销机会，不打断式弹确认
-    toast('已清空搜索记录', 'info', {
+    // 轻量破坏性操作：给一次Undo机会，不打断式弹确认
+    toast('Search history cleared', 'info', {
       action: {
-        label: '撤销',
+        label: 'Undo',
         onClick: () => {
           restoreSearchHistory(snapshot).then(() => history.refetch());
         },
@@ -120,7 +120,7 @@ export function useSearchHistory(input: string) {
 }
 
 /**
- * 最近搜索浮层：紧贴输入框下方，与输入框「拼成同一个面板」。
+ * Recent Searches浮层：紧贴输入框下方，与输入框「拼成同一个面板」。
  * - 不留间隙、不画上边框、上角为直角：上圆角与上边框由输入框容器补齐，
  *   因此接缝处既不会出现缝隙，也不会出现双线；
  * - 外框取 accent 色，与输入框的聚焦边框同色，避免拼接处「上半蓝、下半灰」断色；
@@ -153,20 +153,20 @@ export function SearchHistoryDropdown({
       <div className="flex items-center justify-between pl-4 pr-2 py-2 border-b border-line">
         <span className="flex items-center gap-1.5 text-xs text-faint">
           <Icon name="clock" className="w-3.5 h-3.5" />
-          最近搜索
+          Recent Searches
         </span>
         <button
           type="button"
           className="px-2 py-1 rounded-md text-xs text-faint hover:text-danger hover:bg-hover transition-colors"
           onClick={onClearAll}
         >
-          清空
+          Clear
         </button>
       </div>
       <ul
         id={id}
         role="listbox"
-        aria-label="最近搜索"
+        aria-label="Recent Searches"
         className="max-h-[min(70vh,400px)] overflow-y-auto scrollbar-thin py-1"
       >
         {matches.map((h, i) => (
@@ -187,7 +187,7 @@ export function SearchHistoryDropdown({
             <button
               type="button"
               className="shrink-0 p-1.5 mr-2 rounded-md text-faint hover:text-danger hover:bg-chip transition-colors"
-              aria-label={`删除搜索记录 ${h.text}`}
+              aria-label={`Remove search history entry: ${h.text}`}
               onClick={() => onRemove(h.text)}
             >
               <Icon name="close" className="w-3.5 h-3.5" />

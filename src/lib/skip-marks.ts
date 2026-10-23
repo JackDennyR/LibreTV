@@ -41,9 +41,9 @@ export const SEGMENT_COLORS: Record<SkipSegmentType, string> = {
 
 /** 三类片段的展示名（面板列表 / 进度条 tooltip 共用） */
 export const SEGMENT_LABELS: Record<SkipSegmentType, string> = {
-  opening: '片头',
-  middle: '中段',
-  ending: '片尾',
+  opening: 'Opening',
+  middle: 'Middle',
+  ending: 'Ending',
 };
 
 /** 某集经过时长校验后的有效片段；ending 的 end 已填充为实际时长 */
@@ -220,28 +220,28 @@ export function validateSegment(
   duration: number,
   existing: SkipSegment[] = []
 ): string | null {
-  if (!segment || !SEGMENT_TYPES.has(segment.type)) return '片段类型无效';
-  if (!isFiniteNumber(segment.start) || segment.start < 0) return '片段起点无效';
-  if (segment.type === 'opening' && segment.start !== 0) return '片头片段起点必须为 0';
+  if (!segment || !SEGMENT_TYPES.has(segment.type)) return 'Invalid segment type';
+  if (!isFiniteNumber(segment.start) || segment.start < 0) return 'Invalid segment start';
+  if (segment.type === 'opening' && segment.start !== 0) return 'The opening segment must start at 0';
 
   const start = segment.start;
   let end: number;
   if (segment.type === 'ending') {
-    if (segment.end !== -1) return '片尾片段无需指定终点';
+    if (segment.end !== -1) return 'An ending segment must not have a fixed end';
     end = isFiniteNumber(duration) && duration > 0 ? duration : Number.POSITIVE_INFINITY;
   } else {
-    if (!isFiniteNumber(segment.end)) return '片段终点无效';
+    if (!isFiniteNumber(segment.end)) return 'Invalid segment end';
     end = segment.end;
   }
 
   if (end - start < MIN_SEGMENT_SECONDS) {
-    return `跳过片段至少需要 ${MIN_SEGMENT_SECONDS} 秒`;
+    return `Skip segments must last at least ${MIN_SEGMENT_SECONDS} seconds`;
   }
   if (isFiniteNumber(duration) && duration > 0) {
     if (segment.type === 'ending') {
-      if (start > duration - END_GUARD_SECONDS) return '片尾开始不能贴近视频末尾';
+      if (start > duration - END_GUARD_SECONDS) return 'The ending marker is too close to the end of the video';
     } else if (end > duration - END_GUARD_SECONDS) {
-      return '片段终点不能贴近视频末尾';
+      return 'The segment ends too close to the end of the video';
     }
   }
 
@@ -257,7 +257,7 @@ export function validateSegment(
     // 与已有片段的重叠/间隔判定：gap <= 0 为重叠，0 < gap < MIN_GAP 为过近
     const gap = Math.max(oStart - end, start - oEnd);
     if (gap < MIN_SEGMENT_GAP_SECONDS) {
-      return gap <= 0 ? '片段与已有片段重叠' : `片段之间至少间隔 ${MIN_SEGMENT_GAP_SECONDS} 秒`;
+      return gap <= 0 ? 'This segment overlaps an existing marker' : `Leave at least ${MIN_SEGMENT_GAP_SECONDS} seconds`;
     }
   }
   return null;

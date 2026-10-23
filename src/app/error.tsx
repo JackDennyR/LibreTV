@@ -23,16 +23,16 @@ export default function ErrorPage({
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 flex items-center justify-center px-4">
         <ErrorState
-          message="页面出了点问题，请重试。若持续失败请返回首页。"
+          message="Something went wrong. Try again, or return home if the problem persists."
           onRetry={reset}
-          retryLabel="重试"
+          retryLabel="Retry"
         />
       </main>
       <footer className="border-t border-line py-4">
         <p className="text-center text-xs text-faint">
-          问题持续存在？{' '}
+          Still having trouble?{' '}
           <Link href="/" className="hover:text-accent">
-            返回首页
+            Return Home
           </Link>
         </p>
       </footer>

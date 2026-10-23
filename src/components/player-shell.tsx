@@ -176,14 +176,14 @@ export function PlayerShell({
   const endedRef = useRef(false);
   // 跳过片段：每集已处理的片段（按 type:start 去重），换集时重置（见 loadEpisode）
   const handledSegmentsRef = useRef<Set<string>>(new Set());
-  // 被「撤销」过的片段：本集不再自动跳（否则撤回到片段内会被立刻再跳走），但仍保留提示按钮
+  // 被「Undo」过的片段：本集不再自动跳（否则撤回到片段内会被立刻再跳走），但仍保留提示按钮
   const suppressedAutoRef = useRef<Set<string>>(new Set());
   // 上一次 timeupdate 的位置：用于区分「连续播放越过片尾」与「拖动进度条」
   const lastSampleRef = useRef(0);
   // 跳过按钮提示；用 ref 比较，避免 timeupdate 每 250ms 触发重渲染
   const [skipPrompt, setSkipPrompt] = useState<ResolvedSegment | null>(null);
   const skipPromptRef = useRef<ResolvedSegment | null>(null);
-  // 刚跳过的片段：给一个撤销窗口，误标导致跳掉正片时不必手动拖回去
+  // 刚跳过的片段：给一个Undo窗口，误标导致跳掉正片时不必手动拖回去
   const [undoSkip, setUndoSkip] = useState<{ from: number; segment: ResolvedSegment } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -297,7 +297,7 @@ export function PlayerShell({
     return true;
   };
 
-  /** 记录一次跳过（跳转前的位置）：给 12s 撤销窗口，误标导致跳掉正片时不用手动拖回去 */
+  /** 记录一次跳过（跳转前的位置）：给 12s Undo窗口，误标导致跳掉正片时不用手动拖回去 */
   const rememberSkip = (from: number, segment: ResolvedSegment) => {
     setUndoSkip({ from, segment });
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -311,17 +311,17 @@ export function PlayerShell({
       clearTimeout(undoTimerRef.current);
       undoTimerRef.current = null;
     }
-    // 撤销后把片段从「已处理」移除（按钮会重新出现），同时本集不再自动跳它：
-    // 否则回到片段内会被下一次 timeupdate 立刻再跳走，形成"撤销→又被跳过"的死循环
+    // Undo后把片段从「已处理」移除（按钮会重新出现），同时本集不再自动跳它：
+    // 否则回到片段内会被下一次 timeupdate 立刻再跳走，形成"Undo→又被跳过"的死循环
     handledSegmentsRef.current.delete(segmentKey(last.segment));
     suppressedAutoRef.current.add(segmentKey(last.segment));
     skipTo(last.from);
     setUndoSkip(null);
-    showHint('已撤回跳过');
+    showHint('Skip undone');
   };
 
   /**
-   * 跳过片尾：与自然播完共用 onEnded 链路（清进度 + 依 autoplayNext 连播下一集）。
+   * Skip Ending：与自然播完共用 onEnded 链路（清进度 + 依 autoplayNext 连播下一集）。
    * endedRef 置 true 同时阻止 video:ended 重复回调，也避免卸载时把片尾进度回写。
    */
   const finishBySkip = (ending?: ResolvedSegment) => {
@@ -335,7 +335,7 @@ export function PlayerShell({
     } catch {
       /* 忽略 */
     }
-    showHint('已跳过片尾');
+    showHint('Ending skipped');
     propsRef.current.onEnded?.();
   };
 
@@ -369,7 +369,7 @@ export function PlayerShell({
         if (saved > 10 && Number.isFinite(currentDuration) && saved < currentDuration - 2) {
           if (artRef.current) artRef.current.currentTime = saved;
           prefetchAnchor = saved;
-          showHint(`已从 ${formatTime(saved)} 继续播放`);
+          showHint(`Resumed from ${formatTime(saved)}`);
         }
         restoredRef.current = true;
         restoreCleanupRef.current?.();
@@ -432,16 +432,16 @@ export function PlayerShell({
             !mediaUrl.startsWith('/api/proxy') &&
             (decision.attempt >= 2 || data.details === 'manifestLoadError')
           ) {
-            showHint('直连失败，改用代理重试...');
+            showHint('Direct connection failed. Retrying through the proxy...');
             setupHls(video, `/api/proxy?url=${encodeURIComponent(mediaUrl)}`, false);
             return;
           }
-          showHint(`${decision.reason}（第 ${decision.attempt} 次）...`);
+          showHint(`${decision.reason} (attempt ${decision.attempt})...`);
           recovery.schedule(decision.delayMs, () => hls.startLoad());
           break;
         }
         case 'recover-media': {
-          showHint(`${decision.reason}（第 ${decision.attempt} 次）...`);
+          showHint(`${decision.reason} (attempt ${decision.attempt})...`);
           if (decision.swapAudio) hls.swapAudioCodec?.();
           hls.recoverMediaError();
           break;
@@ -454,7 +454,7 @@ export function PlayerShell({
             showHint(message);
             propsRef.current.onRequestSwitchSource?.(decision.reason);
           } else {
-            setError(`视频加载失败，${message}，请尝试其他视频源`);
+            setError(`Video failed to load: ${message}. Try another video source`);
           }
           break;
         }
@@ -638,11 +638,11 @@ export function PlayerShell({
       // 而不是直接钉死错误遮罩——重建后视频轨重新 append，黑屏有声即可解除
       if (!playbackStartedRef.current && !videoErrorRetryUsedRef.current) {
         videoErrorRetryUsedRef.current = true;
-        showHint('播放异常，正在重试...');
+        showHint('Playback error. Retrying...');
         setupHls(art.video, currentMediaUrlRef.current, true);
         return;
       }
-      setError('视频播放失败，请尝试其他视频源');
+      setError('Playback failed. Try another video source');
     });
     art.on('video:timeupdate', () => {
       const now = Date.now();
@@ -697,11 +697,11 @@ export function PlayerShell({
         if (skipTo(active.end)) {
           handledSegmentsRef.current.add(segmentKey(active));
           rememberSkip(current, active);
-          showHint(active.type === 'opening' ? '已跳过片头' : '已跳过中段');
+          showHint(active.type === 'opening' ? 'Opening skipped' : 'Middle segment skipped');
         }
       }
 
-      // 按钮提示：当前落在某个未处理片段内（结尾片段显示「跳过片尾」）
+      // 按钮提示：当前落在某个未处理片段内（结尾片段显示「Skip Ending」）
       const prompt =
         active && !handledSegmentsRef.current.has(segmentKey(active)) ? active : null;
       updateSkipPrompt(prompt);
@@ -719,7 +719,7 @@ export function PlayerShell({
       updateSkipPrompt(prompt);
     });
     art.on('video:pause', () => {
-      // 跳过片尾会主动 pause：此时已按「看完」处理，不能再把片尾位置写回进度
+      // Skip Ending会主动 pause：此时已按「看完」处理，不能再把片尾位置写回进度
       if (!endedRef.current) propsRef.current.onPause?.(art.currentTime, art.duration);
       // 暂停 = 预取黄金窗口：解除限速并无限铺满整集（用户主动行为，带宽占用可接受）
       // waiting 触发的限速在此解除，否则黄金窗口会被 500ms 轮询冻结
@@ -752,19 +752,19 @@ export function PlayerShell({
       if (e.altKey && e.key === 'ArrowRight') { e.preventDefault(); return; }
       switch (e.key) {
         case 'ArrowLeft':
-          if (current.currentTime > 5) { current.currentTime -= 5; showHint('快退 5s'); e.preventDefault(); }
+          if (current.currentTime > 5) { current.currentTime -= 5; showHint('Back 5s'); e.preventDefault(); }
           break;
         case 'ArrowRight':
-          if (current.duration - current.currentTime > 5) { current.currentTime += 5; showHint('快进 5s'); e.preventDefault(); }
+          if (current.duration - current.currentTime > 5) { current.currentTime += 5; showHint('Forward 5s'); e.preventDefault(); }
           break;
         case 'ArrowUp':
-          if (current.volume < 1) { current.volume = Math.min(1, current.volume + 0.1); showHint(`音量 ${Math.round(current.volume * 100)}%`); e.preventDefault(); }
+          if (current.volume < 1) { current.volume = Math.min(1, current.volume + 0.1); showHint(`Volume ${Math.round(current.volume * 100)}%`); e.preventDefault(); }
           break;
         case 'ArrowDown':
-          if (current.volume > 0) { current.volume = Math.max(0, current.volume - 0.1); showHint(`音量 ${Math.round(current.volume * 100)}%`); e.preventDefault(); }
+          if (current.volume > 0) { current.volume = Math.max(0, current.volume - 0.1); showHint(`Volume ${Math.round(current.volume * 100)}%`); e.preventDefault(); }
           break;
         case ' ':
-          current.toggle(); showHint('播放/暂停'); e.preventDefault();
+          current.toggle(); showHint('Play / Pause'); e.preventDefault();
           break;
         case 'f': case 'F':
           current.fullscreen = !current.fullscreen; e.preventDefault();
@@ -792,14 +792,14 @@ export function PlayerShell({
         case 's': case 'S':
           if (!e.shiftKey) break;
           propsRef.current.onPendingStart(round1(current.currentTime));
-          showHint('片段起点已记录，播放到终点后按 Shift+E');
+          showHint('Start recorded. Press Shift+E at the end');
           e.preventDefault();
           break;
         case 'e': case 'E': {
           if (!e.shiftKey) break;
           const start = propsRef.current.pendingStart;
           if (start === null) {
-            showHint('请先按 Shift+S 记录片段起点');
+            showHint('Press Shift+S to record the start first');
           } else {
             const end = round1(current.currentTime);
             propsRef.current.onPendingStart(null);
@@ -812,7 +812,7 @@ export function PlayerShell({
     };
     document.addEventListener('keydown', shortcuts);
 
-    // —— 移动端长按 3 倍速 ——
+    // —— 移动端长按 3× speed ——
     let longPressTimer: ReturnType<typeof setTimeout> | null = null;
     let isLongPress = false;
     let originalRate = 1.0;
@@ -854,7 +854,7 @@ export function PlayerShell({
         if (art.video?.paused) return;
         art.video.playbackRate = 3.0;
         isLongPress = true;
-        showHint('3 倍速');
+        showHint('3× speed');
       }, 500);
     };
     const onTouchEnd = () => {
@@ -862,7 +862,7 @@ export function PlayerShell({
       if (isLongPress) {
         art.video.playbackRate = originalRate;
         isLongPress = false;
-        showHint(`${originalRate} 倍速`);
+        showHint(`${originalRate}× speed`);
       }
     };
     const onTouchMove = (e: TouchEvent) => {
@@ -1001,30 +1001,30 @@ export function PlayerShell({
               handledSegmentsRef.current.add(segmentKey(skipPrompt));
               rememberSkip(from, skipPrompt);
               updateSkipPrompt(null);
-              showHint(skipPrompt.type === 'opening' ? '已跳过片头' : '已跳过中段');
+              showHint(skipPrompt.type === 'opening' ? 'Opening skipped' : 'Middle segment skipped');
             }
           }}
         >
           {skipPrompt.type === 'ending'
-            ? '跳过片尾'
+            ? 'Skip Ending'
             : skipPrompt.type === 'opening'
-              ? '跳过片头'
-              : '跳过中段'}
+              ? 'Skip Opening'
+              : 'Skip Middle'}
         </button>
       )}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80">
           <p className="text-danger text-sm">{error}</p>
           <button className="btn-ghost text-xs" onClick={() => location.reload()}>
-            重新加载
+            Reload
           </button>
         </div>
       )}
       {(hint || undoSkip) && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 text-sm text-white animate-fade-in">
-          {/* 撤销窗口比普通提示长：hint 已淡出时仍要让用户知道刚才跳过了什么 */}
+          {/* Undo窗口比普通提示长：hint 已淡出时仍要让用户知道刚才跳过了什么 */}
           <span className="pointer-events-none">
-            {hint || (undoSkip ? `已跳过${SEGMENT_LABELS[undoSkip.segment.type]}` : '')}
+            {hint || (undoSkip ? `Skipped ${SEGMENT_LABELS[undoSkip.segment.type]}` : '')}
           </span>
           {undoSkip && (
             <button
@@ -1032,14 +1032,14 @@ export function PlayerShell({
               className="pointer-events-auto shrink-0 rounded-full bg-white/20 px-2 py-0.5 text-xs font-medium transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               onClick={undoLastSkip}
             >
-              撤销
+              Undo
             </button>
           )}
         </div>
       )}
       {autoplayNext && !error && (
         <div className="absolute bottom-16 right-3 text-[10px] text-muted bg-black/50 px-2 py-0.5 rounded pointer-events-none">
-          自动连播已开启
+          Autoplay Next Episode enabled
         </div>
       )}
     </div>
