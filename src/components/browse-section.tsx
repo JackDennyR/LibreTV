@@ -5,10 +5,12 @@ import type { SourceConfig, SearchResultItem } from '@/lib/types';
 import type { BrowseCategory } from '@/lib/browse-categories';
 import { aggregateResults, AggregatedCard } from '@/components/video-card';
 import { useEnglishMetadata } from '@/components/use-english-metadata';
+import { ImdbDiscoverSection } from '@/components/imdb-discover-section';
 
 interface Props {
   sources: SourceConfig[];
   onOpen: (item: SearchResultItem) => void;
+  onFind: (name: string) => void;
 }
 type BrowseResponse = {list:SearchResultItem[];page:number;pageCount:number;genre:string};
 type ActiveBrowse = {source:SourceConfig;genre:string;year?:number;page:number;allowAdult:boolean};
@@ -23,7 +25,7 @@ async function browseApi<T>(payload: Record<string,unknown>, signal?: AbortSigna
   return body;
 }
 
-export function BrowseSection({sources,onOpen}:Props) {
+export function BrowseSection({sources,onOpen,onFind}:Props) {
   const [sourceKey,setSourceKey] = useState('');
   const [genre,setGenre] = useState('');
   const [year,setYear] = useState('');
@@ -126,7 +128,7 @@ export function BrowseSection({sources,onOpen}:Props) {
             {browse.data && <span className="text-xs text-muted">Page {browse.data.page} of {browse.data.pageCount}</span>}
           </div>
           {english.loading && <p className="text-xs text-muted mb-3">Checking English titles and IMDb ratings…</p>}
-          {minRating && <p className="text-xs text-faint mb-3">IMDb ratings are supplied by Cinemeta when available. This filter applies to the current source page; unrated titles are excluded.</p>}
+          {minRating && <p className="text-xs text-faint mb-3">Playable source results below are checked only on this source page. The IMDb discovery list further down checks a broader movie catalog, but does not guarantee the source has each movie.</p>}
           {browse.isPending || browse.isFetching && !browse.data ? (
             <p className="text-muted text-sm py-6">Loading titles…</p>
           ) : browse.isError ? (
@@ -135,7 +137,7 @@ export function BrowseSection({sources,onOpen}:Props) {
               <button type="button" className="btn-ghost btn-sm ml-2" onClick={()=>void browse.refetch()}>Retry</button>
             </div>
           ) : grouped.length===0 ? (
-            <p className="text-muted text-sm py-5">No verified matches for the selected genre, year and minimum IMDb rating. Try a lower rating.</p>
+            <p className="text-muted text-sm py-5">No verified rated matches on this source page. This does not mean the full catalog has none; see IMDb discovery below or continue browsing source pages.</p>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
@@ -149,6 +151,11 @@ export function BrowseSection({sources,onOpen}:Props) {
               </div>
             </>
           )}
+          {minRating && <ImdbDiscoverSection
+            genre={categoryList.find((c)=>c.key===active.genre)?.label || ''}
+            minRating={Number(minRating)} year={active.year}
+            sourceName={active.source.name} onFind={onFind}
+          />}
         </div>
       )}
     </section>
