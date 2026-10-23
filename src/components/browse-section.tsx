@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { SourceConfig, SearchResultItem } from '@/lib/types';
 import type { BrowseCategory } from '@/lib/browse-categories';
 import { aggregateResults, AggregatedCard } from '@/components/video-card';
+import { useEnglishMetadata } from '@/components/use-english-metadata';
 
 interface Props {
   sources: SourceConfig[];
@@ -26,6 +27,7 @@ export function BrowseSection({sources,onOpen}:Props) {
   const [sourceKey,setSourceKey] = useState('');
   const [genre,setGenre] = useState('');
   const [year,setYear] = useState('');
+  const [minRating,setMinRating] = useState('');
   const [adultConfirmed,setAdultConfirmed] = useState(false);
   const [active,setActive] = useState<ActiveBrowse|null>(null);
   const source = useMemo(()=>sources.find((s)=>s.key===sourceKey) || sources[0], [sources,sourceKey]);
@@ -45,7 +47,10 @@ export function BrowseSection({sources,onOpen}:Props) {
     },signal),
     enabled:Boolean(active),retry:1,
   });
-  const grouped=useMemo(()=>aggregateResults(browse.data?.list || []),[browse.data]);
+  const rawItems=useMemo(()=>browse.data?.list || [],[browse.data]);
+  const english=useEnglishMetadata(rawItems);
+  const ratedItems=useMemo(()=>english.items.filter((item)=>!minRating || (item.imdbRating!==undefined && item.imdbRating>=Number(minRating))),[english.items,minRating]);
+  const grouped=useMemo(()=>aggregateResults(ratedItems),[ratedItems]);
   const years=useMemo(()=>Array.from({length:new Date().getFullYear()-1949},(_,i)=>new Date().getFullYear()-i),[]);
   const selectGenre=(key:string)=>{
     if (key==='adult' && !adultConfirmed) {
@@ -69,7 +74,7 @@ export function BrowseSection({sources,onOpen}:Props) {
         </div>
       </div>
       <div className="rounded-xl border border-line bg-surface-raised p-3 sm:p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-end">
           <label className="block text-xs text-muted">
             Source
             <select aria-label="Browse source" value={source?.key || ''} onChange={(e)=>setSourceKey(e.target.value)}
@@ -94,6 +99,14 @@ export function BrowseSection({sources,onOpen}:Props) {
               {years.map((y)=><option key={y} value={y}>{y}</option>)}
             </select>
           </label>
+          <label className="block text-xs text-muted">
+            Minimum IMDb
+            <select aria-label="Minimum IMDb rating" value={minRating} onChange={(e)=>setMinRating(e.target.value)}
+              className="w-full mt-1 rounded-lg border border-line bg-chip text-content px-3 py-2.5 text-sm">
+              <option value="">Any rating</option>
+              {[5,6,7,8,9].map((v)=><option key={v} value={v}>{v}.0+</option>)}
+            </select>
+          </label>
           <button type="button" onClick={apply} disabled={!chosen || browse.isFetching}
             className="btn-primary !rounded-lg px-4 py-2.5 text-sm disabled:opacity-50">
             {browse.isFetching ? 'Loading…' : 'Browse'}
@@ -112,6 +125,8 @@ export function BrowseSection({sources,onOpen}:Props) {
             <h3 className="font-medium text-content text-sm">{chosen?.label || browse.data?.genre}{active.year ? ' · '+active.year : ''}</h3>
             {browse.data && <span className="text-xs text-muted">Page {browse.data.page} of {browse.data.pageCount}</span>}
           </div>
+          {english.loading && <p className="text-xs text-muted mb-3">Checking English titles and IMDb ratings…</p>}
+          {minRating && <p className="text-xs text-faint mb-3">IMDb ratings are supplied by Cinemeta when available. This filter applies to the current source page; unrated titles are excluded.</p>}
           {browse.isPending || browse.isFetching && !browse.data ? (
             <p className="text-muted text-sm py-6">Loading titles…</p>
           ) : browse.isError ? (
@@ -120,7 +135,7 @@ export function BrowseSection({sources,onOpen}:Props) {
               <button type="button" className="btn-ghost btn-sm ml-2" onClick={()=>void browse.refetch()}>Retry</button>
             </div>
           ) : grouped.length===0 ? (
-            <p className="text-muted text-sm py-5">No titles for this genre and year. Choose another filter.</p>
+            <p className="text-muted text-sm py-5">No verified matches for the selected genre, year and minimum IMDb rating. Try a lower rating.</p>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start">

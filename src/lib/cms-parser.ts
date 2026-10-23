@@ -40,6 +40,13 @@ export function parseSearchList(
       ...(typeof vod.vod_sub === 'string' && vod.vod_sub.trim()
         ? { searchAliases: vod.vod_sub.slice(0, 512) }
         : {}),
+      // BFZY often includes the original English title in vod_sub; avoid Chinese
+      // titles on cards when it does. Do not use vod_en (usually pinyin slug).
+      englishTitle: typeof vod.vod_sub === 'string'
+        ? vod.vod_sub.match(/[A-Za-z][A-Za-z0-9 .:'’!?&()\-]{2,}/g)
+          ?.map((part)=>part.trim())
+          .find((part)=>/^[A-Za-z].*[A-Za-z]{2,}/.test(part))?.slice(0,120)
+        : undefined,
       pic: typeof vod.vod_pic === 'string' ? vod.vod_pic : undefined,
       typeName: typeof vod.type_name === 'string' ? vod.type_name : undefined,
       year: typeof vod.vod_year === 'string' ? vod.vod_year : undefined,
