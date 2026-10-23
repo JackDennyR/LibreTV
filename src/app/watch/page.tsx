@@ -113,7 +113,7 @@ function WatchContent() {
   });
 
   const episodes = useMemo(() => detailQuery.data?.episodes ?? [], [detailQuery.data]);
-  const videoTitle = titleParam || detailQuery.data?.videoInfo?.title || '未知视频';
+  const videoTitle = titleParam || detailQuery.data?.videoInfo?.title || 'Unknown Video';
 
   // 当前播放地址：优先取Episode List中的当前集，其次直连 URL 参数
   const currentUrl = useMemo(() => {
@@ -129,8 +129,8 @@ function WatchContent() {
     return indexParam;
   }, [episodes, indexParam]);
 
-  // 跳过片段按剧名记忆：换集不变，换源到同名资源也能命中。
-  // 标题缺失（直连链接）时退回 source:vodId，至少保证本源本片可用。
+  // 跳过片段按剧名记忆：换集不变，换Source到同名资Source也能命中。
+  // 标题缺失（直连链接）时退回 source:vodId，至少保证本Source本片可用。
   const skipMarkFallback = `${sourceKey}:${vodId || currentUrl}`;
   const markKey = useMemo(
     () => skipMarkKey(videoTitle, skipMarkFallback),
@@ -281,10 +281,10 @@ function WatchContent() {
           <BackButton />
           <HomeButton />
           <div className="min-w-0">
-            <h1 className="text-sm font-medium text-content truncate">{videoTitle}</h1>
+            <h1 data-no-english className="text-sm font-medium text-content truncate">{videoTitle}</h1>
             <p className="text-xs text-faint">
               {source.name}
-              {episodes.length > 0 && ` · Episode ${currentIndex + 1}/${episodes.length} episodes`}
+              {episodes.length > 0 && ` · Episode ${currentIndex + 1}/${episodes.length}`}
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -295,17 +295,17 @@ function WatchContent() {
                 enqueueDownload({
                   url: currentUrl,
                   // 多集才带集数后缀；单集影片（含电影）文件名就是纯标题
-                  title: `${videoTitle}${episodes.length > 1 ? ` 第${currentIndex + 1}集` : ''}`,
+                  title: `${videoTitle}${episodes.length > 1 ? ` - Episode ${currentIndex + 1}` : ''}`,
                   format: 'MP4',
                 });
                 // 「已加入下载队列」由 DownloadManager 在真正入队后提示：
                 // 这里先提示的话，用户随后取消保存位置会出现「已加入→已取消」的矛盾
               }}
             >
-              下载本集
+              Download Episode
             </button>
             <button className="btn-ghost btn-sm" onClick={() => setSwitchOpen(true)}>
-              切换资源
+              Change Source
             </button>
           </div>
         </div>
@@ -339,7 +339,7 @@ function WatchContent() {
                   onPrevEpisode={() => goEpisode(currentIndex - 1)}
                   onNextEpisode={() => goEpisode(currentIndex + 1)}
                   onQuality={(height) => {
-                    // 播放实测是最权威的画质来源，回写后搜索列表里该「源 + 影片」直接显示
+                    // 播放实测是最权威的画质来Source，回写后搜索列表里该「Source + 影片」直接显示
                     if (!sourceKey || !vodId) return;
                     useAppStore.getState().setQuality({
                       [qualityKey(sourceKey, vodId)]: { height, from: 'play', timestamp: Date.now() },

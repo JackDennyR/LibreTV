@@ -91,7 +91,7 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
               className="shrink-0 px-2 py-1.5 rounded-md text-xs text-faint hover:text-danger hover:bg-hover transition-colors"
               onClick={() => setConfirmClear(true)}
             >
-              清空历史
+              Clear History
             </button>
           </div>
         ) : undefined
@@ -102,12 +102,12 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
       ) : total === 0 ? (
         <EmptyState variant="plain" title="No Watch History" />
       ) : visible.length === 0 ? (
-        <EmptyState variant="plain" title={`没有匹配「${query.trim()}」的观看记录`} />
+        <EmptyState variant="plain" title={`No watch history matches “${query.trim()}”`} />
       ) : (
         <>
           {!keyword && total > VISIBLE_LIMIT && (
             <p className="text-xs text-faint mb-2">
-              共 {total} 条记录，仅显示最近 {VISIBLE_LIMIT} 条，可用上方搜索查找更早的记录
+              Showing the most recent {VISIBLE_LIMIT} of {total} entries. Search above to find older history.
             </p>
           )}
           <ul className="space-y-2">
@@ -123,11 +123,11 @@ export function HistoryPanel({ open, onClose }: { open: boolean; onClose: () => 
         open={confirmClear}
         danger
         title="Clear all watch history?"
-        message={history ? `将Delete ${history.length} 条观看记录，此操作不可撤销。` : undefined}
-        confirmLabel="清空"
+        message={history ? `Delete ${history.length} watch history entries? This cannot be undone.` : undefined}
+        confirmLabel="Clear All"
         onCancel={() => setConfirmClear(false)}
         onConfirm={() => {
-          void clearAllHistory().then(() => toast('Watch History已清空', 'success'));
+          void clearAllHistory().then(() => toast('Watch history cleared', 'success'));
           setConfirmClear(false);
         }}
       />
@@ -161,9 +161,9 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
   const remove = () => {
     void removeHistory(item.sourceKey, item.vodId).then(() => {
       // 轻操作：给撤销窗口，恢复时写回原记录
-      toast('已Delete该记录', 'info', {
+      toast('History entry removed', 'info', {
         action: {
-          label: '撤销',
+          label: 'Undo',
           onClick: () => {
             void upsertHistory({
               sourceKey: item.sourceKey,
@@ -176,7 +176,7 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
               playbackPosition: item.playbackPosition,
               duration: item.duration,
               timestamp: item.timestamp,
-            }).then(() => toast('已恢复', 'success'));
+            }).then(() => toast('Restored', 'success'));
           },
         },
       });
@@ -213,7 +213,7 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-content truncate">{item.title}</div>
             <div className="text-xs text-faint mt-0.5 flex items-center gap-1.5 flex-wrap">
-              {item.totalEpisodes > 0 && <span>第 {item.episodeIndex + 1}/{item.totalEpisodes} 集</span>}
+              {item.totalEpisodes > 0 && <span>Episode {item.episodeIndex + 1}/{item.totalEpisodes}</span>}
               {hasPercent && <span>· {formatTime(item.playbackPosition)}</span>}
               <span>· {formatRelativeTime(item.timestamp)}</span>
             </div>
@@ -230,8 +230,8 @@ function HistoryItem({ item }: { item: HistoryEntry }) {
           'absolute right-2 top-2 p-2 rounded-full text-faint hover:text-danger',
           'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity'
         )}
-        aria-label="Delete记录"
-        title="Delete记录（可在提示中撤销）"
+        aria-label="Delete entry"
+        title="Delete entry (undo available)"
         onClick={remove}
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

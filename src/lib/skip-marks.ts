@@ -81,7 +81,7 @@ function isFiniteNumber(value: unknown): value is number {
  */
 export function skipMarkKey(title: string | undefined, fallback: string): string {
   const normalized = normalizeTitle(title ?? '');
-  if (!normalized || normalized === normalizeTitle(UNKNOWN_TITLE)) {
+  if (!normalized || normalized === normalizeTitle(UNKNOWN_TITLE) || normalized === normalizeTitle('Unknown Video')) {
     return `f:${fallback}`;
   }
   return `t:${normalized}`;

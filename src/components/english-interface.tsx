@@ -22,8 +22,9 @@ const patterns: Array<[RegExp, (...parts: string[]) => string]> = [
   [/^共\s*(\d+)\s*个\s*·\s*已启用\s*(\d+)$/, (total, enabled) => total + ' total · ' + enabled + ' enabled'],
 ];
 
-const attributes = ['placeholder', 'aria-label', 'title', 'alt'];
-const ignored = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA', 'OPTION']);
+// Never rewrite media descriptions: alt text can be a film title or provider metadata.
+const attributes = ['placeholder', 'aria-label', 'title'];
+const ignored = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE', 'TEXTAREA']);
 
 function english(text: string): string {
   const trimmed = text.trim();

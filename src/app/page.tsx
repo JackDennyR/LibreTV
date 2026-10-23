@@ -18,7 +18,7 @@ import { Icon } from '@/components/icon';
 import { SiteFooter } from '@/components/site-footer';
 
 /**
- * 首页：搜索（URL ?s= 驱动，可后退/分享）+ 豆瓣推荐。
+ * 首页：搜索(URL ?s= 驱动，可后退/分享)+ 豆瓣推荐。
  * 搜索状态由 React Query 管理，失败源在结果区顶部以非阻塞方式展示。
  */
 /** Search Results分批渲染的批大小：一次挂载上千张卡片会明显掉帧 */
@@ -37,7 +37,7 @@ function HomeContent() {
   const router = useRouter();
   const { toast } = useToast();
   const urlQuery = searchParams.get('s') || '';
-  // 精确订阅所需字段（对齐 live 页的做法 ): 搜索流式期间逐源写健康度、
+  // 精确订阅所需字段(对齐 live 页的做法 ): 搜索流式期间逐源写健康度、
   // 打开设置抽屉/历史面板等无关 store 变化，都不应触发首页整树重渲染
   const customAPIs = useAppStore((s) => s.customAPIs);
   const envSources = useAppStore((s) => s.envSources);
@@ -47,7 +47,7 @@ function HomeContent() {
   const subscriptions = useAppStore((s) => s.subscriptions);
   const [input, setInput] = useState(urlQuery);
   const [detailItem, setDetailItem] = useState<SearchResultItem | null>(null);
-  /** 流式搜索中已结算的源（data 就绪前用于增量渲染） */
+  /** 流式搜索中已结算的源(data 就绪前用于增量渲染) */
   const [streamedOutcomes, setStreamedOutcomes] = useState<SourceSearchOutcome[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,9 +72,9 @@ function HomeContent() {
         seen.add(s.key);
         return true;
       })
-      // 自动停用期内的源不参与搜索（到期自动恢复）
+      // 自动停用期内的源不参与搜索(到期自动恢复)
       .filter((s) => !isSourceDisabled({ sourceHealth }, s.key))
-      // 所属订阅被整体停用的源同样跳过（无损：各源勾选状态保留，重新启用即恢复）
+      // 所属订阅被整体停用的源同样跳过(无损：各源勾选状态保留，重新启用即恢复)
       .filter((s) => !isInDisabledSubscription({ subscriptions }, s.key));
   }, [customAPIs, envSources, selectedKeys, sourceHealth, subscriptions]);
   const disabledSources = useMemo(
@@ -112,11 +112,11 @@ function HomeContent() {
       });
     },
     enabled: Boolean(urlQuery) && selectedSources.length > 0,
-    // 5 分钟内从播放页返回时直接使用缓存，不重新搜索（服务端另有 60s 结果缓存兜底）
+    // 5 分钟内从播放页返回时直接使用缓存，不重新搜索(服务端另有 60s 结果缓存兜底)
     staleTime: 300_000,
   });
 
-  // 最近搜索改为搜索框下拉（聚焦展开、按输入过滤），不再常驻首屏
+  // 最近搜索改为搜索框下拉(聚焦展开、按输入过滤)，不再常驻首屏
   const searchHistory = useSearchHistory(input);
 
   const runSearch = (q: string) => {
@@ -141,7 +141,7 @@ function HomeContent() {
   };
 
   const isSearching = Boolean(urlQuery) && searchQuery.isFetching && !searchQuery.data;
-  // 聚合数据未就绪时，用已结算源的结果增量渲染（健康源不再等坏源超时）
+  // 聚合数据未就绪时，用已结算源的结果增量渲染(健康源不再等坏源超时)
   const streamedList = useMemo(
     () => streamedOutcomes.flatMap((o) => o.list),
     [streamedOutcomes]
@@ -158,7 +158,7 @@ function HomeContent() {
   // 跨源同名聚合：同名影片合并为一张卡片，展开后可选择具体来源
   const groups = useMemo(() => aggregateResults(list), [list]);
 
-  // 分批渲染：新一次搜索（groups 变化）时重置回首批
+  // 分批渲染：新一次搜索(groups 变化)时重置回首批
   const [visibleCount, setVisibleCount] = useState(RESULT_PAGE_SIZE);
   const visibleGroups = useMemo(() => groups.slice(0, visibleCount), [groups, visibleCount]);
   useEffect(() => setVisibleCount(RESULT_PAGE_SIZE), [groups]);
@@ -201,13 +201,13 @@ function HomeContent() {
                   下拉展开时改为「上圆下直」并隐去底边，与下方浮层拼成同一个面板 */}
               <div
                 className={cn(
-                  // 12px 圆角矩形（非胶囊 ): 收起态与展开态共用同一组上圆角，
+                  // 12px 圆角矩形(非胶囊 ): 收起态与展开态共用同一组上圆角，
                   // 展开时输入框这部分形状完全不发生变化，上下圆角也与下拉保持一致；
                   // 右侧与上下不留内边距，由搜索按钮拉伸填满、与搜索框边缘贴合
                   'flex items-stretch min-h-12 pl-4 border',
                   'transition-[background-color,border-color,border-radius] duration-200',
                   searchHistory.visible
-                    ? // 展开时：外框（含上圆角）沿用输入框的聚焦样式不变，只把底边改为内部分隔线，
+                    ? // 展开时：外框(含上圆角)沿用输入框的聚焦样式不变，只把底边改为内部分隔线，
                       // 使输入区在展开状态下仍是边界清晰的独立输入框，而非与列表糊成一片
                       'rounded-t-xl rounded-b-none border-accent border-b-line bg-surface-raised'
                     : 'rounded-xl border-line bg-chip focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/40'
@@ -251,7 +251,7 @@ function HomeContent() {
                   </button>
                 )}
                 {/* 主操作按钮：贴合搜索框右端——右侧圆角跟随容器、左侧直角，展开时右下角
-                    跟着容器一起改直角；按压改用亮度反馈（缩放会让贴合边缘露出缝隙） */}
+                    跟着容器一起改直角；按压改用亮度反馈(缩放会让贴合边缘露出缝隙) */}
                 <button
                   type="submit"
                   className={cn(
@@ -261,7 +261,7 @@ function HomeContent() {
                   )}
                 >
                   <Icon name="search" className="w-4 h-4" />
-                  搜索
+                  Search
                 </button>
               </div>
             </form>
@@ -288,12 +288,12 @@ function HomeContent() {
                 “<span className="text-content">{urlQuery}</span>” search results
                 {isSearching ? (
                   <span className="text-faint">
-                    （已就绪 {streamedOutcomes.length}/{selectedSources.length} 个源…）
+                    (Ready {streamedOutcomes.length}/{selectedSources.length} sources…)
                   </span>
                 ) : (
                   searchQuery.data && (
                     <span className="text-faint">
-                      （{groups.length} movies · {list.length} results{failures.length > 0 && `，${failures.length} sources failed`}）
+                      ({groups.length} movies · {list.length} results{failures.length > 0 && `, ${failures.length} sources failed`})
                     </span>
                   )
                 )}
@@ -314,15 +314,15 @@ function HomeContent() {
 
             {disabledSources.length > 0 && (
               <div className="mb-3 text-xs text-faint bg-chip rounded-lg px-3 py-2">
-                {disabledSources.length} 个源因连续超时/失败已暂停参与搜索（临时停用的到期自动恢复，
-                Permanently disabled sources must be restored in Settings ): {disabledSources.map((key) => sourceName(key)).join('、')}
+                {disabledSources.length} sources are excluded after repeated failures. Temporarily disabled sources restore automatically;
+                permanently disabled sources must be restored in Settings: {disabledSources.map((key) => sourceName(key)).join(', ')}
               </div>
             )}
 
             {offSubscriptionSources.length > 0 && (
               <div className="mb-3 text-xs text-faint bg-chip rounded-lg px-3 py-2">
-                {offSubscriptionSources.length} 个源所属的订阅已停用，未参与本次搜索（在设置 → 数据源订阅中可重新启用 ): 
-                {offSubscriptionSources.map((key) => sourceName(key)).join('、')}
+                {offSubscriptionSources.length} sources are excluded because their subscriptions are disabled. Re-enable them under Settings / Source Subscriptions:
+                {offSubscriptionSources.map((key) => sourceName(key)).join(', ')}
               </div>
             )}
 
@@ -346,7 +346,7 @@ function HomeContent() {
                       className="btn-ghost btn-sm"
                       onClick={() => setVisibleCount((v) => v + RESULT_PAGE_SIZE)}
                     >
-                      加载更多（还有 {groups.length - visibleCount} 部）
+                      Load More ({groups.length - visibleCount} remaining)
                     </button>
                   </div>
                 )}
@@ -364,7 +364,7 @@ function HomeContent() {
           </section>
         )}
 
-        {/* 首页推荐（有搜索时隐藏） */}
+        {/* 首页推荐(有搜索时隐藏) */}
         {!urlQuery && (
           <RecommendSection
             onPick={(title) => {
@@ -386,7 +386,7 @@ function ResultsSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        // 结构对齐真实结果卡（左侧缩略图 + 右侧文字块），避免占位与真实卡片形状不符
+        // 结构对齐真实结果卡(左侧缩略图 + 右侧文字块)，避免占位与真实卡片形状不符
         <div key={i} className="card flex h-28 overflow-hidden">
           <div className="w-[105px] sm:w-[120px] shrink-0 bg-chip animate-pulse" />
           <div className="flex-1 p-2.5 space-y-2">
@@ -400,7 +400,7 @@ function ResultsSkeleton() {
   );
 }
 
-/** 无点播源 / 未勾选点播源时的引导（替代旧版首屏静默空白） */
+/** 无点播源 / 未勾选点播源时的引导(替代旧版首屏静默空白) */
 function NoSourceGuide({ hasSources = false }: { hasSources?: boolean }) {
   return (
     <div className="border border-dashed border-line rounded-xl p-10 text-center max-w-lg mx-auto">
@@ -410,9 +410,9 @@ function NoSourceGuide({ hasSources = false }: { hasSources?: boolean }) {
           <>Open Settings, select the movie sources you want to search, and try again.</>
         ) : (
           <>
-            LibreTV 不内置任何采集站。点击右上角「设置 → 添加 API」，填入一个
-            Apple CMS API URL (for example <code className="text-accent text-xs">https://example.com/api.php/provide/vod</code>），
-            勾选后即可开始搜索。
+            LibreTV does not include video sources by default. Open Settings, choose Add API, and enter an
+            Apple CMS API URL (for example <code className="text-accent text-xs">https://example.com/api.php/provide/vod</code>)，
+            Enable the source to start searching.
           </>
         )}
       </p>

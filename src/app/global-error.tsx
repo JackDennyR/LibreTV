@@ -41,7 +41,7 @@ export default function GlobalError({
             cursor: 'pointer',
           }}
         >
-          刷新
+          Refresh
         </button>
         {/* digest 用于线上日志定位，不含敏感信息，展示无妨 */}
         {error.digest && (

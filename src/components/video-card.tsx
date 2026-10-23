@@ -74,12 +74,12 @@ export function aggregateResults(list: SearchResultItem[]): AggregatedGroup[] {
 export function AggregatedCard({
   group,
   onOpen,
-  sources,
+ sources,
 }: {
   group: AggregatedGroup;
   onOpen: (item: SearchResultItem) => void;
   /** 完整 source配置：探测画质需要 source.url / source.detail，搜索结果里只带 sourceUrl */
-  sources?: SourceConfig[];
+ sources?: SourceConfig[];
 }) {
   const imageProxyMode = useAppStore((s) => s.imageProxyMode);
   const customImageProxy = useAppStore((s) => s.customImageProxy);
@@ -174,7 +174,7 @@ export function AggregatedCard({
             <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent" />
             {multi && (
               <span className="absolute top-1.5 left-1.5 tag bg-black/70 text-accent font-medium">
-                {group.items.length}  source
+                {group.items.length} sources
               </span>
             )}
           </div>
@@ -185,7 +185,7 @@ export function AggregatedCard({
             </svg>
             {multi && (
               <span className="absolute top-1.5 left-1.5 tag bg-black/70 text-accent font-medium">
-                {group.items.length}  source
+                {group.items.length} sources
               </span>
             )}
           </div>
@@ -193,11 +193,11 @@ export function AggregatedCard({
 
         <div className="p-2.5 flex flex-col flex-grow min-w-0">
           <div className="flex-grow">
-            <h3 className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={group.name}>
+            <h3 data-no-english className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={group.name}>
               {group.name}
             </h3>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {group.typeName && <span className="tag bg-accent/15 text-accent">{group.typeName}</span>}
+              {group.typeName && <span data-no-english className="tag bg-accent/15 text-accent">{group.typeName}</span>}
               {group.year && <span className="tag bg-purple-500/15 text-purple-600 dark:text-purple-300">{group.year}</span>}
               {adult && <span className="tag bg-pink-500/15 text-pink-600 dark:text-pink-400">(18+)</span>}
               {/* 单 source卡片没有展开列表，画质只能在这里露出；失败态可点重试 */}
@@ -209,10 +209,10 @@ export function AggregatedCard({
                 />
               )}
             </div>
-            <p className="text-xs text-muted line-clamp-2 mb-2">{group.remarks || 'No description available'}</p>
+            <p data-no-english className="text-xs text-muted line-clamp-2 mb-2">{group.remarks || 'No description available'}</p>
           </div>
           <div className="flex items-center justify-between gap-1.5 mt-auto pt-1.5 border-t border-line">
-            <span className="tag bg-chip text-muted truncate max-w-[80%]">
+            <span data-no-english className="tag bg-chip text-muted truncate max-w-[80%]">
               {multi ? `${group.items.length} sources` : group.items[0].sourceName}
             </span>
             {multi && (
@@ -223,7 +223,7 @@ export function AggregatedCard({
                     className="tag bg-accent/15 text-accent font-medium"
                     title={
                       progress.known < progress.total
-                        ? `Best detected quality（${progress.known}/${progress.total} sources checked）`
+                        ? `Best detected quality (${progress.known}/${progress.total} sources checked)`
                         : 'Best detected quality'
                     }
                   >
@@ -250,7 +250,7 @@ export function AggregatedCard({
           <div className="flex items-baseline justify-between gap-2 mb-1.5">
             <p className="text-[10px] text-faint">
               Choose Source
-              {sharedRemarks ? ` · 均 ${sharedRemarks}` : ''}
+              {sharedRemarks ? ` · ${sharedRemarks}` : ''}
             </p>
             {progress.total > 0 &&
               (progress.done < progress.total ? (
@@ -267,7 +267,7 @@ export function AggregatedCard({
           </div>
           {/*
             单列全宽行：两列在卡片实际宽度（约 330px）下每列只剩 148px，
-             source名必截断，且 source数为奇数时必然留半行空。一行内「 source名 / 画质 / Episodes / 」
+            sources名必截断，且 source数为奇数时必然留半行空。一行内「 source名 / 画质 / Episodes / 」
             四段排开，信息密度更高也更容易纵向扫读。
           */}
           <div className="flex flex-col gap-1.5">
@@ -375,17 +375,17 @@ export function VideoCard({ item, onClick }: { item: SearchResultItem; onClick: 
 
         <div className="p-2.5 flex flex-col flex-grow min-w-0">
           <div className="flex-grow">
-            <h3 className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={item.name}>
+            <h3 data-no-english className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={item.name}>
               {item.name}
             </h3>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {item.typeName && <span className="tag bg-accent/15 text-accent">{item.typeName}</span>}
+              {item.typeName && <span data-no-english className="tag bg-accent/15 text-accent">{item.typeName}</span>}
               {item.year && <span className="tag bg-purple-500/15 text-purple-600 dark:text-purple-300">{item.year}</span>}
             </div>
-            <p className="text-xs text-muted line-clamp-2 mb-2">{formatRemarks(item.remarks) || 'No description available'}</p>
+            <p data-no-english className="text-xs text-muted line-clamp-2 mb-2">{formatRemarks(item.remarks) || 'No description available'}</p>
           </div>
           <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-line">
-            <span className="tag bg-chip text-muted truncate max-w-[80%]">{item.sourceName}</span>
+            <span data-no-english className="tag bg-chip text-muted truncate max-w-[80%]">{item.sourceName}</span>
           </div>
         </div>
       </div>

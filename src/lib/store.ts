@@ -947,7 +947,7 @@ export function resolveSource(
   if (fallback?.url) {
     return {
       key,
-      name: fallback.name || '自定义源',
+      name: fallback.name || 'Custom Source',
       url: fallback.url,
       detail: fallback.detail,
     };

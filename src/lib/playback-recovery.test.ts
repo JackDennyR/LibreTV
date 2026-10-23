@@ -31,7 +31,7 @@ describe('PlaybackRecovery 决策表', () => {
         expect(d.attempt).toBe(i + 1);
       } else {
         expect(d).toMatchObject({ action: 'switch-source' });
-        expect(d.action === 'switch-source' && d.reason).toContain('3 次');
+        expect(d.action === 'switch-source' && d.reason).toContain('3 retries');
       }
     }
     expect(delays).toEqual([800, 1600, 3200]);
@@ -106,9 +106,9 @@ describe('schedule', () => {
 
 describe('describeHlsError', () => {
   it('常见 details 映射中文文案', () => {
-    expect(describeHlsError('networkError', 'manifestLoadError')).toBe('播放列表加载失败');
-    expect(describeHlsError('networkError', 'fragLoadError')).toBe('视频分片加载失败');
-    expect(describeHlsError('mediaError', '')).toBe('媒体解码错误');
-    expect(describeHlsError('otherError', 'xyz')).toBe('播放错误（xyz）');
+    expect(describeHlsError('networkError', 'manifestLoadError')).toBe('Failed to load playlist');
+    expect(describeHlsError('networkError', 'fragLoadError')).toBe('Failed to load video segment');
+    expect(describeHlsError('mediaError', '')).toBe('Media decoding error');
+    expect(describeHlsError('otherError', 'xyz')).toBe('Playback error (xyz)');
   });
 });

@@ -112,7 +112,7 @@ export function SourceManagerDrawer({ open, onClose }: { open: boolean; onClose:
     <Drawer
       open={open}
       onClose={onClose}
-      title="设置"
+      title="Settings"
       resetScrollKey={current}
       subheader={
         <div className="space-y-2">
@@ -238,7 +238,7 @@ function VodSourcesPanel() {
       if (filter === 'enabled' && !(store.selectedKeys.includes(s.key) && !isSourceDisabled(store, s.key))) return false;
       if (filter === 'disabled' && !isSourceDisabled(store, s.key)) return false;
       if (filter === 'sub' && !fromSub) return false;
-      // Manually Added = 既非Subscribe导入、也非部署者预置
+      // Manually Added = 既非Subscribe导入、也非Configured by Administrator
       if (filter === 'manual' && (fromSub || envKeys.has(s.key))) return false;
       if (!q) return true;
       return s.name.toLowerCase().includes(q) || s.url.toLowerCase().includes(q);
@@ -275,7 +275,7 @@ function VodSourcesPanel() {
     const keys = filtered.filter((s) => isSourceDisabled(store, s.key)).map((s) => s.key);
     if (keys.length === 0) return;
     keys.forEach((k) => useAppStore.getState().clearSourceHealth(k));
-    toast(`Restored ${keys.length} itemssource`, 'success');
+    toast(`Restored ${keys.length} sources`, 'success');
   };
 
   const empty = store.envSources.length === 0 && store.customAPIs.length === 0;
@@ -309,7 +309,7 @@ function VodSourcesPanel() {
           description="Add an Apple CMS API to search movies, or import both movie and live TV sources through Source Subscriptions."
           action={
             <button className="btn-primary btn-sm" onClick={() => setEditing('__new__')}>
-              Add FirstMovie Sources
+              Add Your First Movie Source
             </button>
           }
         />
@@ -360,7 +360,7 @@ function VodSourcesPanel() {
                   />
                 </div>
                 <span className="tabular-nums shrink-0">
-                  {progress.done}/{progress.total} · 可用 {progress.ok}
+                  {progress.done}/{progress.total} · Available {progress.ok}
                   {formatEta(progress.done, progress.total, progress.startedAt)}
                 </span>
                 <button className="btn-ghost btn-sm shrink-0" onClick={cancel}>
@@ -411,7 +411,7 @@ function formatEta(done: number, total: number, startedAt: number): string {
   if (done <= 0 || done >= total) return '';
   const elapsed = Date.now() - startedAt;
   const remainSec = Math.max(0, Math.round((elapsed / done) * (total - done) / 1000));
-  return remainSec > 0 ? ` · 约 ${remainSec}s` : '';
+  return remainSec > 0 ? ` · about ${remainSec}s` : '';
 }
 
 /** 单条Movie Sources行：勾选 / Name标签 / 健康度 / 探活 / EditDelete（Subscribesource与预置source按来source限制操作） */
@@ -446,10 +446,10 @@ function VodSourceRow({
     // 轻操作：不做确认弹窗，给 6 秒撤销窗口
     toast(`Removed 「${api.name}」`, 'info', {
       action: {
-        label: '撤销',
+        label: 'Undo',
         onClick: () => {
           const ok = useAppStore.getState().restoreCustomApi(snapshot);
-          toast(ok ? '已Restore' : 'Could not restore; the source slot is already occupied', ok ? 'success' : 'warning');
+          toast(ok ? 'Restored' : 'Could not restore; the source slot is already occupied', ok ? 'success' : 'warning');
         },
       },
     });
@@ -479,7 +479,7 @@ function VodSourceRow({
           onChange={() => useAppStore.getState().toggleSourceSelected(api.key)}
           disabled={adultBlocked}
           title={adultBlocked ? 'Turn off the adult content filter before enabling this source' : undefined}
-          aria-label={`选择 ${api.name}`}
+          aria-label={`Select ${api.name}`}
         />
         <div className="flex-1 min-w-0">
           <div className="text-sm font-medium text-content truncate">
@@ -487,7 +487,7 @@ function VodSourceRow({
             {api.isAdult && <span className="text-pink-400 text-xs ml-1">(18+)</span>}
             {isEnv && (
               <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-chip text-faint align-middle">
-                部署者预置
+                Configured by Administrator
               </span>
             )}
             {fromSubscription && (
@@ -649,7 +649,7 @@ function VideoCachePanel() {
       />
       <div className="flex items-center justify-between text-xs text-faint">
         <span>
-          已缓存 {summary.segments} items分片 · {formatBytes(summary.bytes)} · {summary.episodes} 集
+          Cached ${summary.segments} segments · ${formatBytes(summary.bytes)} · ${summary.episodes} episodes
         </span>
         <button
           type="button"
@@ -662,7 +662,7 @@ function VideoCachePanel() {
             setClearing(false);
           }}
         >
-          清理缓存
+          Clear Cache
         </button>
       </div>
     </div>
@@ -699,7 +699,7 @@ function ImagePanel() {
 }
 
 /**
- * Custom代理模板输入：本地即时回显 + 300ms 防抖写 store。
+ * Custom proxy template输入：本地即时回显 + 300ms 防抖写 store。
  * 直接每次按键写 store 会让全站封面 URL 重算并触发一轮图片重载（模板输入时缩略图持续闪烁）。
  */
 function CustomProxyInput() {
@@ -719,7 +719,7 @@ function CustomProxyInput() {
   return (
     <input
       className="input w-full"
-      aria-label="Custom代理模板"
+      aria-label="Custom proxy template"
       placeholder="Proxy template, e.g. https://p.example.com/?url={url}"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
@@ -750,9 +750,9 @@ function HomePanel() {
           value={store.recommendSource}
           onChange={(v) => store.updateSettings({ recommendSource: v as 'douban' | 'bangumi' | 'hot-list' })}
           options={[
-            { value: 'douban', label: '豆瓣', hint: 'Popular movies and series' },
+            { value: 'douban', label: 'Douban', hint: 'Popular movies and series' },
             { value: 'bangumi', label: 'Bangumi', hint: 'Daily anime schedule (no key required)' },
-            { value: 'hot-list', label: '影视榜单', hint: 'Douban weekly charts / Baidu trending' },
+            { value: 'hot-list', label: 'Charts', hint: 'Douban weekly charts / Baidu trending' },
           ]}
         />
       </div>
@@ -816,7 +816,7 @@ function SourceSubscriptions() {
 
   /**
    * 发布当前「已勾选启用」的source：只把真正在参与Search的source发出去
-   * （未勾选的、以及被自动停用的都排除）。注意这与「导出Datasource」的全量语义不同。
+   * （未勾选的、以及被自动停用的都排除）。注意这与「Export Sources」的全量语义不同。
    */
   const publish = async () => {
     const seen = new Set<string>();
@@ -920,7 +920,7 @@ function SourceSubscriptions() {
                 0
               }
             >
-              导出Datasource
+              Export Sources
             </button>
             <button
               className="btn-ghost btn-sm"
@@ -946,7 +946,7 @@ function SourceSubscriptions() {
               onFocus={(e) => e.currentTarget.select()}
             />
             <button className="btn-ghost btn-sm shrink-0" onClick={copyPublished}>
-              复制
+              Copy
             </button>
             <button
               className="btn-ghost btn-sm shrink-0"
@@ -955,12 +955,12 @@ function SourceSubscriptions() {
                 void sync(published.url);
               }}
             >
-              直接Subscribe
+              Subscribe Now
             </button>
           </div>
           <p className="mt-1.5 text-[11px] text-faint leading-relaxed">
-            已发布到 {published.provider}（{published.sources} movie sources, {published.liveSources} live TV sources）。
-            链接内容公开可读，粘贴板也可能随时清理——长期使用建议自行托管。
+            Published to {published.provider}（{published.sources} movie sources, {published.liveSources} live TV sources).
+            The published link is public and may expire. Host the exported file yourself for long-term use.
           </p>
         </div>
       )}
@@ -985,8 +985,8 @@ function SourceSubscriptions() {
       </div>
       {store.subscriptions.length === 0 ? (
         <p className="text-xs text-faint">
-          一份Subscribe可同时下发Movie Sources与Live TV Sources，支持 LibreTV source列表与 TVBOX Settings（仅导入可直接使用的接口，Spider 类站点自动跳过）；
-          「导出Datasource」生成的 JSON 托管到任意 URL 即可分享给他人Subscribe。
+          A subscription can provide both movie and live TV sources. LibreTV source lists and compatible TVBOX JSON are supported.
+          Host the JSON generated by Export Sources at a URL to share it with others.
         </p>
       ) : (
         <ul className="space-y-2">
@@ -1021,11 +1021,11 @@ function SourceSubscriptions() {
                           className="text-[10px] px-1.5 py-0.5 rounded bg-danger/15 text-danger"
                           title={sub.lastError}
                         >
-                          上次同步失败
+                          Last sync failed
                         </span>
                       ) : sub.lastStatus === 'ok' && sub.lastCounts ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success">
-                          上次导入 {sub.lastCounts.vod} Movie / {sub.lastCounts.live} 直播
+                          Last imported {sub.lastCounts.vod} Movie / {sub.lastCounts.live} Live TV
                         </span>
                       ) : null}
                     </div>
@@ -1047,7 +1047,7 @@ function SourceSubscriptions() {
                     className="rounded-md p-2 shrink-0 text-muted transition-colors hover:bg-hover hover:text-accent disabled:opacity-40"
                     disabled={isSyncing}
                     onClick={() => sync(sub.url)}
-                    aria-label="重新同步"
+                    aria-label="Sync Again"
                     title="Sync from the remote list, replacing sources imported through this subscription."
                   >
                     {isSyncing ? (
@@ -1059,7 +1059,7 @@ function SourceSubscriptions() {
                   <button
                     className="rounded-md p-2 shrink-0 text-muted transition-colors hover:bg-hover hover:text-danger"
                     onClick={() => setPendingDelete(sub.url)}
-                    aria-label="DeleteSubscribe"
+                    aria-label="Delete Subscription"
                     title="Remove this subscription and its imported sources. Favorite channels are preserved."
                   >
                     <Icon name="trash" className="w-4 h-4" />
@@ -1071,7 +1071,7 @@ function SourceSubscriptions() {
         </ul>
       )}
 
-      {/* 重操作：DeleteSubscribe会级联移除其导入的source，先确认并说明影响面 */}
+      {/* 重操作：Delete Subscription会级联移除其导入的source，先确认并说明影响面 */}
       <ConfirmDialog
         open={pendingDelete !== null}
         danger
@@ -1084,12 +1084,12 @@ function SourceSubscriptions() {
                 if (impact.vod > 0) parts.push(`${impact.vod} movie sources`);
                 if (impact.live > 0) parts.push(`${impact.live} live TV sources`);
                 return parts.length > 0
-                  ? `Also remove imported ${parts.join(' 与 ')}; favorite channels will be preserved.`
+                  ? `Also remove imported ${parts.join(' and ')}; favorite channels will be preserved.`
                   : 'This subscription has no imported sources. Other data will not be affected.';
               })()
             : undefined
         }
-        confirmLabel="DeleteSubscribe"
+        confirmLabel="Delete Subscription"
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => {
           const url = pendingDelete;
@@ -1203,7 +1203,7 @@ function summarizeConfig(text: string): string {
       const vod = Array.isArray(state.customAPIs) ? state.customAPIs.length : 0;
       const live = Array.isArray(state.liveSubscriptions) ? state.liveSubscriptions.length : 0;
       const subs = Array.isArray(state.subscriptions) ? state.subscriptions.length : 0;
-      parts.push(`${vod} movie sources`, `${live} live TV sources`, `${subs} itemsSubscribe`);
+      parts.push(`${vod} movie sources`, `${live} live TV sources`, `${subs} subscriptions`);
     } catch {
       /* 设置片段损坏时忽略该部分统计 */
     }
@@ -1217,7 +1217,7 @@ function summarizeConfig(text: string): string {
       /* 忽略 */
     }
   }
-  return parts.length > 0 ? `This file contains ${parts.join('、')}` : 'No importable data found in this file';
+  return parts.length > 0 ? `This file contains ${parts.join(', ')}` : 'No importable data found in this file';
 }
 
 function SourceForm({
@@ -1274,14 +1274,14 @@ function SourceForm({
     <input
       className="input w-full"
       aria-label="API URL"
-      placeholder="API URL，如 https://example.com/api.php/provide/vod"
+      placeholder="API URL, e.g. https://example.com/api.php/provide/vod"
       value={url}
       onChange={(e) => setUrl(e.target.value)}
     />
     <input
       className="input w-full"
       aria-label="Details page URL (optional)"
-      placeholder="Details page URL (optional)，如 https://example.com"
+      placeholder="Details page URL (optional), e.g. https://example.com"
       value={detail}
       onChange={(e) => setDetail(e.target.value)}
     />
@@ -1292,7 +1292,7 @@ function SourceForm({
           checked={isAdult}
           onChange={(e) => setIsAdult(e.target.checked)}
         />
-        标记为成人内容source（受成人过滤控制）
+        Mark as an adult source (subject to the adult content filter)
       </label>
       <div className="flex gap-2 justify-end">
         <button className="btn-ghost btn-sm" onClick={onCancel}>

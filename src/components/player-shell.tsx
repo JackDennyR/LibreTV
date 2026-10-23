@@ -271,7 +271,7 @@ export function PlayerShell({
     for (const seg of segments) {
       const el = document.createElement('div');
       el.dataset.skipSegment = '1';
-      el.title = `跳过${SEGMENT_LABELS[seg.type]}`;
+      el.title = `Skip ${SEGMENT_LABELS[seg.type]}`;
       const left = (seg.start / duration) * 100;
       const width = Math.max(0.4, ((seg.end - seg.start) / duration) * 100);
       el.style.cssText = `position:absolute;left:${left}%;width:${width}%;top:0;bottom:0;background:${SEGMENT_COLORS[seg.type]};pointer-events:none;`;
@@ -540,7 +540,7 @@ export function PlayerShell({
           index: 11,
           position: 'left',
           html: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"/></svg>',
-          tooltip: '上一集 (Alt+←)',
+          tooltip: 'Previous Episode (Alt+←)',
           click: () => {
             if (propsRef.current.hasPrevEpisode) propsRef.current.onPrevEpisode?.();
           },
@@ -550,7 +550,7 @@ export function PlayerShell({
           index: 12,
           position: 'left',
           html: '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path fill="currentColor" d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>',
-          tooltip: '下一集 (Alt+→)',
+          tooltip: 'Next Episode (Alt+→)',
           click: () => {
             if (propsRef.current.hasNextEpisode) propsRef.current.onNextEpisode?.();
           },

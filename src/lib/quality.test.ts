@@ -283,14 +283,14 @@ describe('describeQualityBadge', () => {
 
   it('有档位：探测值与实测值的 tooltip 区分数据来源', () => {
     expect(describeQualityBadge(entry({ height: 1080 }))).toMatchObject({ kind: 'value', label: '1080P' });
-    expect(describeQualityBadge(entry({ height: 1080, from: 'play' }))?.title).toContain('实测');
-    expect(describeQualityBadge(entry({ height: 1080, from: 'probe' }))?.title).toContain('播放列表');
+    expect(describeQualityBadge(entry({ height: 1080, from: 'play' }))?.title).toContain('Measured');
+    expect(describeQualityBadge(entry({ height: 1080, from: 'probe' }))?.title).toContain('playlist');
   });
 
   it('无高度无错误 = 未知，且不可重试（源站本就不给信息）', () => {
     const view = describeQualityBadge(entry());
     expect(view).toMatchObject({ kind: 'unknown', retryable: false });
-    expect(view?.title).toContain('单码率');
+    expect(view?.title).toContain('No resolution');
   });
 
   it('有错误 = 未探到，可重试，且原因写进 tooltip', () => {
@@ -338,16 +338,16 @@ describe('summarizeQuality', () => {
 
 describe('失败原因标签', () => {
   it('源站拒绝与超时各有短标签', () => {
-    expect(failureReasonLabel('HTTP 403')).toBe('防盗链');
-    expect(failureReasonLabel('画质探测超时')).toBe('超时');
-    expect(failureReasonLabel('未找到播放资源')).toBe('无资源');
+    expect(failureReasonLabel('HTTP 403')).toBe('Access blocked');
+    expect(failureReasonLabel('画质探测超时')).toBe('Timeout');
+    expect(failureReasonLabel('未找到播放资源')).toBe('No Stream');
   });
 
   it('传输层失败也要有标签：否则线上只剩裸「未测到」，无从判断哪一环挂了', () => {
-    expect(failureReasonLabel('探测请求被网关拦截（未收到任何响应）')).toBe('连接中断');
-    expect(failureReasonLabel('探测连接中途被断开（已收到部分结果，多为网关超时）')).toBe('连接中断');
-    expect(failureReasonLabel('探测请求没能送达服务器（网络或反向代理中断）')).toBe('连接中断');
-    expect(failureReasonLabel('请求失败 (502)')).toBe('网关异常');
+    expect(failureReasonLabel('探测请求被网关拦截（未收到任何响应）')).toBe('Connection interrupted');
+    expect(failureReasonLabel('探测连接中途被断开（已收到部分结果，多为网关超时）')).toBe('Connection interrupted');
+    expect(failureReasonLabel('探测请求没能送达服务器（网络或反向代理中断）')).toBe('Connection interrupted');
+    expect(failureReasonLabel('请求失败 (502)')).toBe('Gateway error');
   });
 
   it('无法归类的错误不硬造标签', () => {

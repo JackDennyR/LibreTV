@@ -17,19 +17,19 @@ import { Drawer } from './drawer';
  * 播放页的「跳过标记」抽屉。
  *
  * 采集站不提供片头片尾元数据，边界只能由用户在看的时候标记一次，
- * 之后同剧各集与同名资源自动套用。 segment按位置归类：opening（片头）、
- * middle（中段）、ending（片尾）。抽屉负责「记录/试跳/微调/删除」，
+ * 之后同剧各集与同名资源自动套用。 segment按位置归类：opening（片头 )、
+ * middle（中段 )、ending（片尾 )。抽屉负责「记录/试跳/微调/删除」，
  * 真正的跳过判定在 player-shell.tsx，存储与校验在 lib/skip-marks.ts。
  *
  * 交互约定：
  * - 抽屉是非模态的：不遮光、不锁滚动、不挡点击。标记的前提是"看着画面记边界"，
  *   模态遮罩会把正在播的视频压暗并吃掉点击，反而没法边看边标；
- * - 手机上（<lg）退化成底部半屏抽屉，并把记录按钮放在 footer 常驻，避免盖住画面、
+ * - 手机上（<lg )退化成底部半屏抽屉，并把记录按钮放在 footer 常驻，避免盖住画面、
  *   也避免列表变长后要滚到底才能记一笔；
  * - 记录/试跳前先暂停：点击到读取之间视频还在走，容易偏 1–2 秒；
  * - 顶部常驻「Current 12:34 / 45:00」，试跳与微调都有参照；
- * - 中段两步态的起点由播放页持有（pendingStart），与 Shift+S/E 共用同一份状态；
- * - 全局「自动跳过 segment」在这里只读展示（层级不同，避免和「本剧跳过」并排成两个 checkbox）。
+ * - 中段两步态的起点由播放页持有（pendingStart )，与 Shift+S/E 共用同一份状态；
+ * - 全局「自动跳过 segment」在这里只读展示（层级不同，避免和「Skip for This Series」并排成两个 checkbox )。
  */
 
 interface PlayerClock {
@@ -55,15 +55,15 @@ export function SkipMarkPanel({
 }: {
   open: boolean;
   onClose: () => void;
-  /** 已归一化的标记键（watch 页按剧名计算） */
+  /** 已归一化的标记键（watch 页按剧名计算 ) */
   markKey: string;
-  /** 中段两步态起点（页面层持有） */
+  /** 中段两步态起点（页面层持有 ) */
   pendingStart: number | null;
   onPendingStart: (start: number | null) => void;
   /** 读取播放器Current时间/时长/跳转；播放器未就绪时返回 null */
   getPlayerClock: () => PlayerClock | null;
   /**
-   * 小屏抽屉的最大高度（px，由播放页按播放器底边算出）：
+   * 小屏抽屉的最大高度（px，由播放页按播放器底边算出 )：
    * 视口矮、播放器占比大时靠它保证抽屉不压住画面；未传则用默认 60vh。
    */
   mobileMaxHeight?: number;
@@ -110,7 +110,7 @@ export function SkipMarkPanel({
     return { t: round1(c.currentTime), duration: c.duration };
   };
 
-  /** 记录一条 segment；成功返回 true（失败时保留两步态，用户可以改位置重试） */
+  /** 记录一条 segment；成功返回 true（失败时保留两步态，用户可以改位置重试 ) */
   const tryRecord = (segment: SkipSegment, label: string, duration: number): boolean => {
     const error = validateSegment(segment, duration, segments);
     if (error) {
@@ -165,7 +165,7 @@ export function SkipMarkPanel({
       toast('The end must be after the start', 'warning');
       return;
     }
-    if (tryRecord({ type: 'middle', start: pendingStart, end: snap.t }, '中段 segment', snap.duration)) {
+    if (tryRecord({ type: 'middle', start: pendingStart, end: snap.t }, 'Middle Segment', snap.duration)) {
       onPendingStart(null);
     }
   };
@@ -206,7 +206,7 @@ export function SkipMarkPanel({
     write(segments.map((s, i) => (i === index ? changed : s)));
   };
 
-  /** 试跳：跳到后保持暂停，让用户先确认画面（终点落在 segment末尾前 1s） */
+  /** 试跳：跳到后保持暂停，让用户先确认画面（终点落在 segment末尾前 1s ) */
   const jump = (seg: SkipSegment, to: 'start' | 'end') => {
     const c = getPlayerClock();
     if (!c) {
@@ -231,7 +231,7 @@ export function SkipMarkPanel({
     <Drawer
       open={open}
       onClose={onClose}
-      title="跳过标记"
+      title="Skip Markers"
       width="max-w-sm lg:max-w-[20rem]"
       modal={false}
       mobileSheet
@@ -246,7 +246,7 @@ export function SkipMarkPanel({
               title="Mark the current frame as the end of the opening"
               onClick={() => recordAt('opening')}
             >
-              记为Opening End
+              Mark Opening End
             </button>
             <button
               type="button"
@@ -254,19 +254,19 @@ export function SkipMarkPanel({
               title="Mark the current frame as the start of the ending"
               onClick={() => recordAt('ending')}
             >
-              记为Ending Start
+              Mark Ending Start
             </button>
             {pendingStart === null ? (
               <button type="button" className="btn-ghost btn-sm" onClick={markMiddleStart}>
-                标记Middle Start
+                Mark Middle Start
               </button>
             ) : (
               <>
                 <button type="button" className="btn-ghost btn-sm" onClick={markMiddleEnd}>
-                  标记Middle End（自 {formatTime(pendingStart)}）
+                  Mark Middle End (from {formatTime(pendingStart)} )
                 </button>
                 <button type="button" className="btn-ghost btn-sm" title="Discard this start marker" onClick={() => onPendingStart(null)}>
-                  取消
+                  Cancel
                 </button>
               </>
             )}
@@ -301,14 +301,14 @@ export function SkipMarkPanel({
             disabled={!mark}
             onChange={(e) => setSkipMarkEnabled(markKey, e.target.checked)}
           />
-          本剧跳过
+          Skip for This Series
         </label>
       </div>
 
       {segments.length === 0 ? (
         <p className="mt-3 rounded-lg border border-dashed border-line px-3 py-3 text-xs leading-relaxed text-faint">
-          No skip markers yet segment。Play to the desired time and use the buttons or keyboard shortcuts:
-          Shift+I Opening End / Shift+O Ending Start / Shift+S · Shift+E 中段区间。
+          No skip markers yet.Play to the desired time and use the buttons or keyboard shortcuts:
+          Shift+I Opening End / Shift+O Ending Start / Shift+S · Shift+E Middle Segment。
         </p>
       ) : (
         <ul className="mt-3 space-y-2">
@@ -343,7 +343,7 @@ export function SkipMarkPanel({
                     title="Jump to the start to check its position"
                     onClick={() => jump(seg, 'start')}
                   >
-                    起点
+                    Start
                   </button>
                   {seg.type !== 'ending' && (
                     <button
@@ -352,7 +352,7 @@ export function SkipMarkPanel({
                       title="Jump to one second before the end to verify the marker"
                       onClick={() => jump(seg, 'end')}
                     >
-                      终点
+                      End
                     </button>
                   )}
                   <button type="button" className="btn-ghost btn-sm" title="Move the boundary back one second" onClick={() => nudge(i, -1)}>
@@ -367,7 +367,7 @@ export function SkipMarkPanel({
                     title="Delete (undo is available)"
                     onClick={() => remove(i)}
                   >
-                    删
+                    Delete
                   </button>
                 </div>
               </li>
@@ -376,10 +376,10 @@ export function SkipMarkPanel({
         </ul>
       )}
 
-      {/* 全局开关：只读展示（层级与本剧开关不同，改起来去设置里更不容易误解） */}
+      {/* 全局开关：只读展示（层级与本剧开关不同，改起来去设置里更不容易误解 ) */}
       <div className="mt-3 rounded-lg border border-line bg-surface px-3 py-2.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted">Global · Auto-skip segment</span>
+          <span className="text-xs text-muted">Global · Auto-skip segments</span>
           <span className={cn('text-xs font-medium', autoSkipSegments ? 'text-accent' : 'text-faint')}>
             {autoSkipSegments ? 'Enabled' : 'Disabled'}
           </span>
@@ -388,7 +388,7 @@ export function SkipMarkPanel({
           {autoSkipSegments
             ? 'Opening and middle segments are skipped automatically. Ending markers end the episode; autoplay controls the next episode.'
             : 'Show skip buttons without automatically skipping.'}
-          影响所有剧，在「设置 → 偏好设置」修改。
+           Applies to all series. Change this under Settings / Preferences.
         </p>
       </div>
 

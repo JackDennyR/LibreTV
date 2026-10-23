@@ -147,7 +147,7 @@ export function LiveSourceManager() {
           description="Add an M3U URL to browse and play channels on the Live TV page. You can also import playlists using Source Subscriptions or configure DEFAULT_LIVE_SOURCES."
           action={
             <button className="btn-primary btn-sm" onClick={() => setAdding(true)}>
-              Add第一个Live TV Source
+              Add Your First Live TV Source
             </button>
           }
         />
@@ -233,7 +233,7 @@ export function LiveSourceManager() {
                       <button
                         className="rounded-md p-2 text-muted transition-colors hover:bg-hover hover:text-accent shrink-0"
                         onClick={() => exportM3u(row.url)}
-                        aria-label="导出 M3U"
+                        aria-label="Export M3U"
                         title="Export as a standard M3U file"
                       >
                         <Icon name="download" className="w-4 h-4" />
@@ -336,7 +336,7 @@ function LiveSourceForm({
       <input
         className="input w-full disabled:opacity-60"
         aria-label="M3U playlist URL"
-        placeholder="M3U playlist URL，如 https://example.com/list.m3u"
+        placeholder="M3U playlist URL, e.g. https://example.com/list.m3u"
         value={url}
         maxLength={500}
         disabled={!!initial}
@@ -354,14 +354,14 @@ function LiveSourceForm({
       <input
         className="input w-full"
         aria-label="EPG URL (optional)"
-        placeholder="EPG 节目单地址（可选，XMLTV xml/xml.gz）"
+        placeholder="EPG TV guide URL (optional, XMLTV xml/xml.gz)"
         value={epg}
         maxLength={500}
         onChange={(e) => setEpg(e.target.value)}
       />
       <div className="flex gap-2 justify-end">
         <button className="btn-ghost btn-sm" onClick={onCancel}>
-          取消
+          Cancel
         </button>
         <button className="btn-primary btn-sm" onClick={submit}>
           Add

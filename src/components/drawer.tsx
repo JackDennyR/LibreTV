@@ -192,7 +192,7 @@ export function Drawer({
           <button
             className="p-1.5 rounded-md text-muted hover:text-content hover:bg-hover transition-colors"
             onClick={onClose}
-            aria-label="关闭"
+            aria-label="Close"
           >
             <Icon name="close" />
           </button>

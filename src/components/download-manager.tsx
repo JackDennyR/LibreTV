@@ -121,12 +121,12 @@ export function DownloadManager({ isOpen, onClose }: { isOpen: boolean; onClose:
         .then(async () => {
           await updateEntry(entry.id, { status: 'completed' });
           void clearDownloadChunks(entry.id);
-          toast(`《${entry.title}》 download complete`, 'success');
+          toast(`${entry.title} download complete`, 'success');
         })
         .catch(async (err: Error) => {
           if (abort.signal.aborted) return; // 用户取消：状态已在取消处理里写好
           await updateEntry(entry.id, { status: 'error' });
-          toast(`《${entry.title}》 download failed: ${err.message}`, 'error');
+          toast(`${entry.title} download failed: ${err.message}`, 'error');
         })
         .finally(() => {
           running.current.delete(entry.id);
@@ -200,7 +200,7 @@ export function DownloadManager({ isOpen, onClose }: { isOpen: boolean; onClose:
         await db.downloads.put(entry);
         refresh();
         scheduleNext();
-        toast(`《${detail.title}》 added to the download queue`, 'success');
+        toast(`${detail.title} added to the download queue`, 'success');
       })();
     };
 
@@ -249,7 +249,7 @@ export function DownloadManager({ isOpen, onClose }: { isOpen: boolean; onClose:
         await updateEntry(entry.id, { status: 'waiting' });
         scheduleNext();
       } catch (err) {
-        if (err instanceof Error && err.message.includes('取消')) toast('已取消', 'info');
+        if (err instanceof Error && err.message.includes('取消')) toast('Canceled', 'info');
       }
       return;
     }
@@ -265,8 +265,8 @@ export function DownloadManager({ isOpen, onClose }: { isOpen: boolean; onClose:
     // 终态（Completed/Failed）删的是记录而非终止任务；文件已保存在用户选择的位置，不受影响
     toast(
       entry.status === 'completed' || entry.status === 'error'
-        ? `《${entry.title}》 download record removed`
-        : `《${entry.title}》 download canceled`,
+        ? `${entry.title} download record removed`
+        : `${entry.title} download canceled`,
       'info'
     );
   };

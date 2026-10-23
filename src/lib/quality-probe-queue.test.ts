@@ -85,8 +85,8 @@ describe('createProbeQueue', () => {
     rejects[0]('boom');
 
     await expect(failing).resolves.toMatchObject({
-      's1:vod-0': { error: '探测失败' },
-      's1:vod-1': { error: '探测失败' },
+      's1:vod-0': { error: 'Check failed' },
+      's1:vod-1': { error: 'Check failed' },
     });
 
     const next = queue.push([{ source: source('s2'), id: 'other' }]);
@@ -106,8 +106,8 @@ describe('createProbeQueue', () => {
     await vi.advanceTimersByTimeAsync(50);
 
     await expect(done).resolves.toMatchObject({
-      's1:vod-0': { error: '探测已取消' },
-      's1:vod-1': { error: '探测已取消' },
+      's1:vod-0': { error: 'Check canceled' },
+      's1:vod-1': { error: 'Check canceled' },
     });
   });
 
@@ -118,7 +118,7 @@ describe('createProbeQueue', () => {
     const done = queue.push(items(1));
     queue.cancel(['s1:vod-0']);
 
-    await expect(done).resolves.toMatchObject({ 's1:vod-0': { error: '探测已取消' } });
+    await expect(done).resolves.toMatchObject({ 's1:vod-0': { error: 'Check canceled' } });
     await vi.advanceTimersByTimeAsync(60);
     expect(run).not.toHaveBeenCalled();
   });
@@ -131,13 +131,13 @@ describe('createProbeQueue', () => {
 
     const first = queue.push(items(1));
     await vi.advanceTimersByTimeAsync(1_200);
-    await expect(first).resolves.toMatchObject({ 's1:vod-0': { error: '探测超时' } });
+    await expect(first).resolves.toMatchObject({ 's1:vod-0': { error: 'Check timed out' } });
 
     // 槽位已释放：新批次能正常调度（否则整个队列永久停摆）
     const second = queue.push([{ source: source('s1'), id: 'vod-9' }]);
     await vi.advanceTimersByTimeAsync(1_200);
     expect(run).toHaveBeenCalledTimes(2);
-    await expect(second).resolves.toMatchObject({ 's1:vod-9': { error: '探测超时' } });
+    await expect(second).resolves.toMatchObject({ 's1:vod-9': { error: 'Check timed out' } });
   });
 
   it('onStart 只在批次真正发出时回调一次，排队期间不回调', async () => {
@@ -183,7 +183,7 @@ describe('createProbeQueue', () => {
     await vi.advanceTimersByTimeAsync(60);
 
     expect(onStart).not.toHaveBeenCalled();
-    await expect(done).resolves.toMatchObject({ 's1:vod-0': { error: '探测已取消' } });
+    await expect(done).resolves.toMatchObject({ 's1:vod-0': { error: 'Check canceled' } });
   });
 
   it('空入队不产生请求', async () => {

@@ -14,7 +14,7 @@ import type { QualityProbeItem, QualityProbeResult } from './types';
  * - 最多 2 个请求在飞、每批最多 8 条：既能让首屏先亮，又不会形成请求风暴；
  * - 单个批次失败只影响该批条目，队列继续工作；
  * - 服务端提前关流时，未回结果的条目按「已取消」收尾，调用方不会永远挂起；
- * - 看门狗：单批超过 timeoutMs 无结果即按「探测超时」收尾并释放槽位，
+ * - 看门狗：单批超过 timeoutMs 无结果即按「Check timed out」收尾并释放槽位，
  *   避免服务端挂起把 2 个并发槽永久占死（队列是全局单例，占死等于全站停摆）；
  * - onStart 在批次真正发出时回调：调用方据此显示的「探测中」不会在排队期间说谎。
  */
@@ -36,7 +36,7 @@ export interface ProbeQueueDeps {
    * 单批看门狗（ms），默认 60_000。
    * 服务端每条目有 8s 死线，正常批次远快于此；但若服务端崩溃导致流挂起，
    * fetch 会一直 pending——队列只有 2 个槽位，一个挂起就废掉一半运力，
-   * 两个挂起则全站单源探测停摆。超时后按「探测超时」收尾并释放槽位。
+   * 两个挂起则全站单源探测停摆。超时后按「Check timed out」收尾并释放槽位。
    */
   timeoutMs?: number;
 }
@@ -56,7 +56,7 @@ export interface ProbeQueue {
 const cancelled = (item: QualityProbeItem): QualityProbeResult => ({
   sourceKey: item.source.key,
   vodId: item.id,
-  error: '探测已取消',
+  error: 'Check canceled',
 });
 
 export function createProbeQueue(deps: ProbeQueueDeps): ProbeQueue {
@@ -127,7 +127,7 @@ export function createProbeQueue(deps: ProbeQueueDeps): ProbeQueue {
             await Promise.race([
               runPromise,
               new Promise<never>((_, reject) => {
-                watchdog = setTimeout(() => reject(new Error('探测超时')), timeoutMs);
+                watchdog = setTimeout(() => reject(new Error('Check timed out')), timeoutMs);
               }),
             ]);
           } finally {
@@ -139,7 +139,7 @@ export function createProbeQueue(deps: ProbeQueueDeps): ProbeQueue {
             settle(key, { ...cancelled(items[index]) });
           }
         } catch (err) {
-          const message = err instanceof Error && err.message === '探测超时' ? '探测超时' : '探测失败';
+          const message = err instanceof Error && err.message === 'Check timed out' ? 'Check timed out' : 'Check failed';
           for (const [index, key] of keys.entries()) {
             if (answered.has(key)) continue;
             settle(key, {

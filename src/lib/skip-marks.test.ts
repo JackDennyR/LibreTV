@@ -28,6 +28,7 @@ describe('skipMarkKey', () => {
     expect(skipMarkKey(undefined, 'custom_0:123')).toBe('f:custom_0:123');
     expect(skipMarkKey('', 'custom_0:123')).toBe('f:custom_0:123');
     expect(skipMarkKey('未知视频', 'custom_0:123')).toBe('f:custom_0:123');
+    expect(skipMarkKey('Unknown Video', 'custom_0:123')).toBe('f:custom_0:123');
   });
 
   it('不同的剧不会互相串标记', () => {

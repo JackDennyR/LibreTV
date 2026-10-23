@@ -142,8 +142,8 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
       >
         <div className="flex items-start justify-between gap-4 p-5 pb-3 border-b border-line">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-content break-words">{item.name}</h2>
-            <span className="text-sm text-faint">{item.sourceName}</span>
+            <h2 data-no-english className="text-lg font-semibold text-content break-words">{item.name}</h2>
+            <span data-no-english className="text-sm text-faint">{item.sourceName}</span>
           </div>
           <button
             className="p-1.5 rounded-md text-muted hover:text-content hover:bg-hover shrink-0"
