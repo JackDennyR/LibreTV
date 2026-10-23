@@ -30,6 +30,7 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
   const [error, setError] = useState('');
   const [reversed, setReversed] = useState(false);
   const [posterFailed, setPosterFailed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +53,7 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
     if (!item) {
       setDetail(null);
       setError('');
+      setLoading(false);
       return;
     }
     const source = resolveSource(store, item.sourceKey, {
@@ -59,25 +61,45 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
       name: item.sourceName,
     });
     if (!source) {
+      setDetail(null);
+      setLoading(false);
       setError('This movie source is no longer configured. Re-add it in Settings.');
       return;
     }
     setLoading(true);
+    setDetail(null);
     setError('');
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    // Bound the waiting state independently of upstream and gateway timeouts.
+    const deadline = setTimeout(() => {
+      controller.abort(new DOMException('Episode details timed out', 'TimeoutError'));
+    }, 12_000);
     api
       .detail(item.vodId, source, controller.signal)
-      .then((d) => setDetail(d))
+      .then((d) => {
+        if (abortRef.current === controller && !controller.signal.aborted) setDetail(d);
+      })
       .catch((err) => {
+        if (abortRef.current !== controller) return;
+        if (controller.signal.reason instanceof DOMException && controller.signal.reason.name === 'TimeoutError') {
+          setError('This movie source did not respond in time. Retry or choose another source.');
+          return;
+        }
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'Failed to load details');
       })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+      .finally(() => {
+        clearTimeout(deadline);
+        if (abortRef.current === controller) setLoading(false);
+      });
+    return () => {
+      clearTimeout(deadline);
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item]);
+  }, [item, retryCount]);
 
   useEffect(() => {
     if (!item) return;
@@ -159,7 +181,7 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
         <div className="p-5 pt-4">
           {loading && <LoadingState label="Loading episodes..." />}
 
-          {!loading && error && <ErrorState message={error || 'Loading failed'} />}
+          {!loading && error && <ErrorState message={error || 'Loading failed'} onRetry={() => setRetryCount((n) => n + 1)} />}
 
           {!loading && !error && detail && (
             <>
