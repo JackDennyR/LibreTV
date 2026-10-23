@@ -131,6 +131,23 @@ describe('parseDetail', () => {
     expect(parseDetail(data, source).videoInfo.subtitleTitle).toBe('Jack Reacher');
   });
 
+  it('extracts the English subtitle search name from mixed Chinese aliases without commas', () => {
+    const data = { list: [{
+      vod_name: '侠探杰克：永不回头',
+      vod_sub: '烈探狙击2(港)  神隐任务：永不回头(台)  侠探杰克2：永不归  杰克·理查尔2  Jack Reacher 2  谍影侠探：永不回头',
+      vod_play_url: 'HD$https://cdn.example.com/reacher.m3u8',
+    }] };
+    expect(parseDetail(data, source).videoInfo.subtitleTitle).toBe('Jack Reacher 2');
+  });
+
+  it('falls back to the original title when there is no English alias', () => {
+    const data = { list: [{
+      vod_name: '中文片名', vod_sub: '别名一  别名二',
+      vod_play_url: 'HD$https://cdn.example.com/movie.m3u8',
+    }] };
+    expect(parseDetail(data, source).videoInfo.subtitleTitle).toBeUndefined();
+  });
+
   it('play_url 为空时从简介兜底', () => {
     const data = { list: [{ vod_name: 'X', vod_content: '$https://cdn/fall.m3u8' }] };
     const detail = parseDetail(data, source);
