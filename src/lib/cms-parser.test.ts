@@ -182,6 +182,7 @@ describe('parseDetailPageHtml', () => {
 describe('成人内容过滤', () => {
   it('识别敏感分类', () => {
     expect(isAdultContent('伦理片')).toBe(true);
+    expect(isAdultContent('理论片')).toBe(true);
     expect(isAdultContent('福利片')).toBe(true);
     expect(isAdultContent('科幻片')).toBe(false);
     expect(isAdultContent(undefined)).toBe(false);

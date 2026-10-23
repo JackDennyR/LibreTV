@@ -16,6 +16,8 @@ import { useToast } from '@/components/toast';
 import { EmptyState } from '@/components/states';
 import { Icon } from '@/components/icon';
 import { SiteFooter } from '@/components/site-footer';
+import { BrowseSection } from '@/components/browse-section';
+import { categoriesFromCms, matchesGenre } from '@/lib/browse-categories';
 
 /**
  * 首页：搜索(URL ?s= 驱动，可后退/分享)+ 豆瓣推荐。
@@ -47,6 +49,8 @@ function HomeContent() {
   const subscriptions = useAppStore((s) => s.subscriptions);
   const [input, setInput] = useState(urlQuery);
   const [detailItem, setDetailItem] = useState<SearchResultItem | null>(null);
+  const [resultGenre, setResultGenre] = useState('');
+  const [resultYear, setResultYear] = useState('');
   /** 流式搜索中已结算的源(data 就绪前用于增量渲染) */
   const [streamedOutcomes, setStreamedOutcomes] = useState<SourceSearchOutcome[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -150,13 +154,22 @@ function HomeContent() {
     () => searchQuery.data?.list ?? (isSearching ? streamedList : []),
     [searchQuery.data, isSearching, streamedList]
   );
+  const searchGenres = useMemo(() => {
+    const types = [...new Set(list.map((item) => item.typeName).filter((name): name is string => Boolean(name)))];
+    return categoriesFromCms({class: types.map((name, i) => ({type_id: i + 1, type_name: name}))});
+  }, [list]);
+  const searchYears = useMemo(() => [...new Set(list.map((item) => item.year).filter((year): year is string => Boolean(year && /^\d{4}$/.test(year))))].sort((a,b)=>b.localeCompare(a)), [list]);
+  const filteredList = useMemo(() => list.filter((item) =>
+    (!resultGenre || matchesGenre(item.typeName, resultGenre)) && (!resultYear || item.year === resultYear)
+  ), [list,resultGenre,resultYear]);
+  useEffect(() => {setResultGenre('');setResultYear('');}, [urlQuery]);
   const failures =
     searchQuery.data?.failures ??
     streamedOutcomes
       .filter((o) => !o.ok)
       .map((o) => ({ sourceKey: o.sourceKey, error: o.error || 'Request failed', timedOut: o.timedOut }));
   // 跨源同名聚合：同名影片合并为一张卡片，展开后可选择具体来源
-  const groups = useMemo(() => aggregateResults(list), [list]);
+  const groups = useMemo(() => aggregateResults(filteredList), [filteredList]);
 
   // 分批渲染：新一次搜索(groups 变化)时重置回首批
   const [visibleCount, setVisibleCount] = useState(RESULT_PAGE_SIZE);
@@ -326,10 +339,35 @@ function HomeContent() {
               </div>
             )}
 
+            {list.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4" aria-label="Filter search results">
+                <label className="text-xs text-muted flex items-center gap-2">
+                  Genre
+                  <select value={resultGenre} onChange={(e)=>setResultGenre(e.target.value)} aria-label="Filter by genre"
+                    className="rounded-lg border border-line bg-chip text-content px-3 py-2 text-sm">
+                    <option value="">All genres</option>
+                    {searchGenres.map((genre)=><option key={genre.key} value={genre.key}>{genre.label}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs text-muted flex items-center gap-2">
+                  Year
+                  <select value={resultYear} onChange={(e)=>setResultYear(e.target.value)} aria-label="Filter by year"
+                    className="rounded-lg border border-line bg-chip text-content px-3 py-2 text-sm">
+                    <option value="">All years</option>
+                    {searchYears.map((year)=><option key={year} value={year}>{year}</option>)}
+                  </select>
+                </label>
+                {(resultGenre || resultYear) && (
+                  <button className="btn-ghost btn-sm" type="button" onClick={()=>{setResultGenre('');setResultYear('');}}>Clear filters</button>
+                )}
+              </div>
+            )}
+
             {selectedSources.length === 0 ? (
               <NoSourceGuide hasSources={customAPIs.length > 0 || envSources.length > 0} />
             ) : list.length > 0 ? (
               <>
+                {groups.length === 0 && <p className="text-muted text-sm py-6">No results match the selected genre and year.</p>}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-start">
                   {visibleGroups.map((group) => (
                     <AggregatedCard
@@ -362,6 +400,10 @@ function HomeContent() {
               />
             )}
           </section>
+        )}
+
+        {!urlQuery && selectedSources.length > 0 && (
+          <BrowseSection sources={selectedSources} onOpen={setDetailItem} />
         )}
 
         {/* 首页推荐(有搜索时隐藏) */}
