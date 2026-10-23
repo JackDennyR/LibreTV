@@ -10,6 +10,7 @@ import { SmartImage } from './smart-image';
 import { QualityBadge } from './quality-badge';
 import { useQualityProbe } from './use-quality-probe';
 import { useInView } from './use-in-view';
+import { categoriesFromCms } from '@/lib/browse-categories';
 
 // —— 跨 source同名聚合 ——
 
@@ -86,6 +87,11 @@ export function AggregatedCard({
   const [imgFailed, setImgFailed] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const showImg = !!group.pic && !imgFailed;
+  const englishTitle=group.items.find((item)=>item.englishTitle)?.englishTitle || 'English title unavailable';
+  const verifiedRating=group.items.find((item)=>item.imdbRating!==undefined)?.imdbRating;
+  const englishGenre=group.items.find((item)=>item.englishGenre)?.englishGenre ||
+    (group.typeName ? categoriesFromCms({class:[{type_id:1,type_name:group.typeName}]})[0]?.label : undefined);
+  const englishDescription=group.items.find((item)=>item.englishDescription)?.englishDescription;
 
   const multi = group.items.length > 1;
   const adult = useMemo(() => group.items.some((i) => i.isAdult), [group.items]);
@@ -167,7 +173,7 @@ export function AggregatedCard({
               url={group.pic}
               mode={imageProxyMode}
               customProxy={customImageProxy}
-              alt={group.name}
+              alt={englishTitle}
               className="absolute inset-0 h-full w-full object-cover"
               onExhausted={() => setImgFailed(true)}
             />
@@ -193,13 +199,14 @@ export function AggregatedCard({
 
         <div className="p-2.5 flex flex-col flex-grow min-w-0">
           <div className="flex-grow">
-            <h3 data-no-english className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={group.name}>
-              {group.name}
+            <h3 className="font-semibold text-sm text-content mb-1.5 line-clamp-2" title={englishTitle}>
+              {englishTitle}
             </h3>
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {group.typeName && <span data-no-english className="tag bg-accent/15 text-accent">{group.typeName}</span>}
+              {englishGenre && <span className="tag bg-accent/15 text-accent">{englishGenre}</span>}
               {group.year && <span className="tag bg-purple-500/15 text-purple-600 dark:text-purple-300">{group.year}</span>}
               {adult && <span className="tag bg-pink-500/15 text-pink-600 dark:text-pink-400">(18+)</span>}
+              {verifiedRating!==undefined && <span className="tag bg-amber-500/15 text-amber-300" title="IMDb rating via Cinemeta">IMDb {verifiedRating.toFixed(1)}</span>}
               {/* 单 source卡片没有展开列表，画质只能在这里露出；失败态可点重试 */}
               {singleKey && (
                 <QualityBadge
@@ -209,7 +216,7 @@ export function AggregatedCard({
                 />
               )}
             </div>
-            <p data-no-english className="text-xs text-muted line-clamp-2 mb-2">{group.remarks || 'No description available'}</p>
+            <p className="text-xs text-muted line-clamp-2 mb-2">{englishDescription || (englishTitle === 'English title unavailable' ? 'English metadata unavailable' : 'Open for movie details')}</p>
           </div>
           <div className="flex items-center justify-between gap-1.5 mt-auto pt-1.5 border-t border-line">
             <span data-no-english className="tag bg-chip text-muted truncate max-w-[80%]">

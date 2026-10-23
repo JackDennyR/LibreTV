@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/client-api';
 import type { SearchResultItem, VideoDetail } from '@/lib/types';
 import { buildWatchUrl } from '@/lib/utils';
-import { formatRemarks } from '@/lib/remarks';
 import { SmartImage } from './smart-image';
 import { useAppStore, resolveSource } from '@/lib/store';
 import { useToast } from './toast';
@@ -15,6 +14,9 @@ import { copyToClipboard } from '@/lib/clipboard';
 import { EmptyState, ErrorState, LoadingState } from './states';
 import { useFocusTrap } from './use-focus-trap';
 import { Icon } from './icon';
+import { useEnglishMetadata } from './use-english-metadata';
+import { englishRegionFromChinese } from '@/lib/english-display';
+import { categoriesFromCms } from '@/lib/browse-categories';
 
 /**
  *  Details弹窗：剧集列表 + 排序 + Copy Link。
@@ -22,6 +24,13 @@ import { Icon } from './icon';
  */
 
 export function DetailModal({ item, onClose }: { item: SearchResultItem | null; onClose: () => void }) {
+  const metadataInputs=useMemo(()=>item?[item]:[],[item]);
+  const english=useEnglishMetadata(metadataInputs);
+  const enriched=english.items[0];
+  const displayTitle=enriched?.englishTitle || 'English title unavailable';
+  const trailerUrl=enriched?.trailerUrl || (enriched?.englishTitle
+    ? 'https://www.youtube.com/results?search_query='+encodeURIComponent(enriched.englishTitle+' '+(enriched.year||'')+' official trailer')
+    : undefined);
   const store = useAppStore();
   const router = useRouter();
   const { toast } = useToast();
@@ -117,13 +126,13 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
 
   const play = (index: number) => {
     if (!detail || !detail.episodes[index]) return;
-    addSearchHistory(item.name).catch(() => {});
+    addSearchHistory(enriched?.englishTitle || item.name).catch(() => {});
     router.push(
       buildWatchUrl({
         sourceKey: item.sourceKey,
         vodId: item.vodId,
         index,
-        title: item.name,
+        title: enriched?.englishTitle || 'Movie',
         sourceUrl: item.sourceUrl,
       })
     );
@@ -138,7 +147,7 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
       sourceKey: item.sourceKey,
       vodId: item.vodId,
       index: 0,
-      title: item.name,
+      title: enriched?.englishTitle || 'Movie',
       sourceUrl: item.sourceUrl,
     });
     const ok = await copyToClipboard(new URL(watchPath, window.location.origin).href);
@@ -147,14 +156,17 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
   };
 
   // Notes与卡片同源，同样归一化，避免同一部剧在两处显示不同文案
-  const remarks = formatRemarks(info?.remarks);
+  const englishGenre=enriched?.englishGenre || (info?.typeName
+    ? categoriesFromCms({class:[{type_id:1,type_name:info.typeName}]})[0]?.label : undefined);
+  const englishRegion=enriched?.englishRegion || englishRegionFromChinese(info?.area);
   const metaRows = [
-    info?.typeName && ['Genre', info.typeName],
-    info?.year && ['Year', info.year],
-    info?.area && ['Region', info.area],
-    info?.director && ['Director', info.director],
-    info?.actor && ['Cast', info.actor],
-    remarks && ['Notes', remarks],
+    englishGenre && ['Genre', englishGenre],
+    (info?.year || enriched?.year) && ['Year', info?.year || enriched?.year || ''],
+    englishRegion && ['Region', englishRegion],
+    enriched?.englishDirector && ['Director', enriched.englishDirector],
+    enriched?.englishCast && ['Cast', enriched.englishCast],
+    enriched?.runtime && ['Runtime', enriched.runtime],
+    info?.remarks && /HD|高清/i.test(info.remarks) && ['Availability','HD available'],
   ].filter(Boolean) as [string, string][];
 
   return (
@@ -170,11 +182,11 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
         className="bg-surface-raised rounded-xl w-full max-w-3xl shadow-2xl animate-slide-up outline-none"
         role="dialog"
         aria-modal="true"
-        aria-label={`${item.name}  Details`}
+        aria-label={`${displayTitle} Details`}
       >
         <div className="flex items-start justify-between gap-4 p-5 pb-3 border-b border-line">
           <div className="min-w-0">
-            <h2 data-no-english className="text-lg font-semibold text-content break-words">{item.name}</h2>
+            <h2 className="text-lg font-semibold text-content break-words">{displayTitle}</h2>
             <span data-no-english className="text-sm text-faint">{item.sourceName}</span>
           </div>
           <button
@@ -201,7 +213,7 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
                     url={item.pic}
                     mode={store.imageProxyMode}
                     customProxy={store.customImageProxy}
-                    alt={item.name}
+                    alt={displayTitle}
                     className="w-24 sm:w-32 aspect-[2/3] object-cover rounded-lg bg-chip shrink-0 self-center sm:self-start"
                     loading="eager"
                     onExhausted={() => setPosterFailed(true)}
@@ -218,8 +230,22 @@ export function DetailModal({ item, onClose }: { item: SearchResultItem | null; 
                       ))}
                     </div>
                   )}
-                  {info?.desc && (
-                    <p className="text-sm text-muted leading-relaxed line-clamp-3">{info.desc}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    {enriched?.imdbRating!==undefined && (
+                      <a href={enriched.imdbId ? 'https://www.imdb.com/title/'+enriched.imdbId+'/' : '#'} target="_blank" rel="noopener noreferrer"
+                        className="tag bg-amber-500/15 text-amber-300">IMDb {enriched.imdbRating.toFixed(1)} / 10</a>
+                    )}
+                    {enriched?.imdbId && !enriched.imdbRating && (
+                      <a className="text-accent underline" target="_blank" rel="noopener noreferrer"
+                        href={'https://www.imdb.com/title/'+enriched.imdbId+'/'}>IMDb page · Not rated</a>
+                    )}
+                    {trailerUrl && <a href={trailerUrl} target="_blank" rel="noopener noreferrer"
+                      className="btn-ghost btn-sm">{enriched?.trailerUrl ? 'Watch trailer on YouTube' : 'Find trailer on YouTube'}</a>}
+                  </div>
+                  {english.loading ? (
+                    <p className="text-sm text-muted">Loading English movie details…</p>
+                  ) : (
+                    <p className="text-sm text-muted leading-relaxed">{enriched?.englishDescription || 'English synopsis not available for this title.'}</p>
                   )}
                 </div>
               </div>

@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/states';
 import { Icon } from '@/components/icon';
 import { SiteFooter } from '@/components/site-footer';
 import { BrowseSection } from '@/components/browse-section';
+import { useEnglishMetadata } from '@/components/use-english-metadata';
 import { categoriesFromCms, matchesGenre } from '@/lib/browse-categories';
 
 /**
@@ -51,6 +52,7 @@ function HomeContent() {
   const [detailItem, setDetailItem] = useState<SearchResultItem | null>(null);
   const [resultGenre, setResultGenre] = useState('');
   const [resultYear, setResultYear] = useState('');
+  const [resultMinRating,setResultMinRating]=useState('');
   /** 流式搜索中已结算的源(data 就绪前用于增量渲染) */
   const [streamedOutcomes, setStreamedOutcomes] = useState<SourceSearchOutcome[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -154,15 +156,17 @@ function HomeContent() {
     () => searchQuery.data?.list ?? (isSearching ? streamedList : []),
     [searchQuery.data, isSearching, streamedList]
   );
+  const english=useEnglishMetadata(list);
   const searchGenres = useMemo(() => {
     const types = [...new Set(list.map((item) => item.typeName).filter((name): name is string => Boolean(name)))];
     return categoriesFromCms({class: types.map((name, i) => ({type_id: i + 1, type_name: name}))});
   }, [list]);
   const searchYears = useMemo(() => [...new Set(list.map((item) => item.year).filter((year): year is string => Boolean(year && /^\d{4}$/.test(year))))].sort((a,b)=>b.localeCompare(a)), [list]);
-  const filteredList = useMemo(() => list.filter((item) =>
-    (!resultGenre || matchesGenre(item.typeName, resultGenre)) && (!resultYear || item.year === resultYear)
-  ), [list,resultGenre,resultYear]);
-  useEffect(() => {setResultGenre('');setResultYear('');}, [urlQuery]);
+  const filteredList = useMemo(() => english.items.filter((item) =>
+    (!resultGenre || matchesGenre(item.typeName, resultGenre)) && (!resultYear || item.year === resultYear) &&
+    (!resultMinRating || (item.imdbRating !== undefined && item.imdbRating >= Number(resultMinRating)))
+  ), [english.items,resultGenre,resultYear,resultMinRating]);
+  useEffect(() => {setResultGenre('');setResultYear('');setResultMinRating('');}, [urlQuery]);
   const failures =
     searchQuery.data?.failures ??
     streamedOutcomes
@@ -357,12 +361,22 @@ function HomeContent() {
                     {searchYears.map((year)=><option key={year} value={year}>{year}</option>)}
                   </select>
                 </label>
-                {(resultGenre || resultYear) && (
-                  <button className="btn-ghost btn-sm" type="button" onClick={()=>{setResultGenre('');setResultYear('');}}>Clear filters</button>
+                <label className="text-xs text-muted flex items-center gap-2">
+                  Minimum IMDb
+                  <select aria-label="Filter by IMDb rating" value={resultMinRating} onChange={(e)=>setResultMinRating(e.target.value)}
+                    className="rounded-lg border border-line bg-chip text-content px-3 py-2 text-sm">
+                    <option value="">Any</option>
+                    {[5,6,7,8,9].map((score)=><option key={score} value={score}>{score}.0+</option>)}
+                  </select>
+                </label>
+                {(resultGenre || resultYear || resultMinRating) && (
+                  <button className="btn-ghost btn-sm" type="button" onClick={()=>{setResultGenre('');setResultYear('');setResultMinRating('');}}>Clear filters</button>
                 )}
               </div>
             )}
 
+            {english.loading && <p className="text-xs text-muted mb-3">Matching English titles and IMDb ratings…</p>}
+            {resultMinRating && <p className="text-xs text-faint mb-3">IMDb filter covers the first {english.firstPageCount} titles fetched for this search. Movies without a verified rating are excluded.</p>}
             {selectedSources.length === 0 ? (
               <NoSourceGuide hasSources={customAPIs.length > 0 || envSources.length > 0} />
             ) : list.length > 0 ? (

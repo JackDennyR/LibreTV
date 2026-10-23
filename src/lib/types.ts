@@ -17,6 +17,17 @@ export interface SearchResultItem {
   name: string;
   /** Alternative titles supplied by the movie provider (for searching across languages). */
   searchAliases?: string;
+  /** Verified English details and IMDb rating if an external match exists. */
+  englishTitle?: string;
+  englishDescription?: string;
+  imdbId?: string;
+  imdbRating?: number;
+  englishGenre?: string;
+  englishRegion?: string;
+  englishDirector?: string;
+  englishCast?: string;
+  runtime?: string;
+  trailerUrl?: string;
   pic?: string;
   typeName?: string;
   year?: string;
