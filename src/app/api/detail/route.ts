@@ -42,6 +42,8 @@ export async function GET(req: Request) {
   }
 
   try {
+    // Overall upstream deadline bounds both the JSON request and optional HTML fallback.
+    const deadline = AbortSignal.timeout(9500);
     // 详情页根地址：显式 detail 优先，其次 baseUrl 参数，最后用接口地址的 origin 推导
     // （Apple CMS 的详情页通常与接口同域）。脏 URL 会让 new URL 抛错，由外层 catch 兜底
     const detailRoot = (source.detail || baseUrl || new URL(source.url).origin).replace(/\/+$/, '');
@@ -61,7 +63,7 @@ export async function GET(req: Request) {
 
     // 1) 标准列表接口
     const api = `${source.url.replace(/\/+$/, '')}?ac=videolist&ids=${encodeURIComponent(id)}`;
-    const res = await fetchUpstream(api, { timeoutMs: 10000, headers: cmsRequestHeaders() });
+    const res = await fetchUpstream(api, { timeoutMs: 7000, signal: deadline, headers: cmsRequestHeaders() });
     if (res.ok) {
       const data = await res.json();
       try {
@@ -83,7 +85,8 @@ export async function GET(req: Request) {
       }
       const detailUrl = `${detailRoot}/index.php/vod/detail/id/${id}.html`;
       const detailRes = await fetchUpstream(detailUrl, {
-        timeoutMs: 10000,
+        timeoutMs: 4000,
+        signal: deadline,
         headers: { 'User-Agent': cmsRequestHeaders()['User-Agent'] },
       });
       if (detailRes.ok) {
@@ -98,9 +101,19 @@ export async function GET(req: Request) {
     setCache(cacheKey, resolved, DETAIL_CACHE_TTL);
     return NextResponse.json(resolved);
   } catch (err) {
+    const timedOut =
+      err instanceof Error &&
+      (err.name === 'TimeoutError' ||
+        err.name === 'AbortError' ||
+        (err.cause instanceof Error && /timeout|timed out/i.test(err.cause.message)) ||
+        /timeout|timed out/i.test(err.message));
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : '获取详情失败' },
-      { status: 502 }
+      {
+        error: timedOut
+          ? 'This movie source did not respond in time. Retry or choose another source.'
+          : 'Could not retrieve episodes from this movie source. Try another source.',
+      },
+      { status: timedOut ? 504 : 502 }
     );
   }
 }
