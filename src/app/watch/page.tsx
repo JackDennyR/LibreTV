@@ -53,7 +53,7 @@ function WatchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const store = useAppStore();
-  const { verified } = useAuth();
+  const { checked, verified, openLogin } = useAuth();
   const { toast } = useToast();
 
   const sourceKey = searchParams.get('source') || '';
@@ -254,8 +254,19 @@ function WatchContent() {
 
   if (!verified) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-faint text-sm">Checking access...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+        {checked ? (
+          <>
+            <p className="text-muted text-sm">
+              Sign in on this device to open the shared video link.
+            </p>
+            <button type="button" className="btn-primary" onClick={openLogin}>
+              Enter Password
+            </button>
+          </>
+        ) : (
+          <p className="text-faint text-sm">Checking access...</p>
+        )}
       </div>
     );
   }

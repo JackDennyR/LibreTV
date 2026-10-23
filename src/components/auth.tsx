@@ -59,6 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSetupRequired(!s.passwordRequired);
         setVersion(s.version);
         setChecked(true);
+        // An iPhone, standalone Home Screen PWA, and Mac have separate cookies.
+        // Fresh visitors must be invited to sign in even when /api/status
+        // returns HTTP 200 with verified=false (no 401 is emitted in that case).
+        if (!s.verified) setModalOpen(true);
       })
       .catch(() => {
         if (!cancelled) setChecked(true);
