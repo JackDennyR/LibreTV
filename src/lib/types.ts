@@ -15,6 +15,8 @@ export interface SearchResultItem {
   sourceName: string;
   vodId: string;
   name: string;
+  /** Alternative titles supplied by the movie provider (for searching across languages). */
+  searchAliases?: string;
   pic?: string;
   typeName?: string;
   year?: string;

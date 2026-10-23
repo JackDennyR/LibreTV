@@ -35,6 +35,11 @@ export function parseSearchList(
       sourceName: source.name,
       vodId: String(vod.vod_id ?? ''),
       name: String(vod.vod_name ?? ''),
+      // Apple CMS providers often store the English title in vod_sub while vod_name is Chinese.
+      // Preserve the provider's alternate title for relevance matching; do not translate metadata.
+      ...(typeof vod.vod_sub === 'string' && vod.vod_sub.trim()
+        ? { searchAliases: vod.vod_sub.slice(0, 512) }
+        : {}),
       pic: typeof vod.vod_pic === 'string' ? vod.vod_pic : undefined,
       typeName: typeof vod.type_name === 'string' ? vod.type_name : undefined,
       year: typeof vod.vod_year === 'string' ? vod.vod_year : undefined,
@@ -278,8 +283,17 @@ export function isRelevant(name: string, wd: string): boolean {
 }
 
 /** 丢弃无关结果；即使全部不相关，也不能返回源站的原始目录。 */
-export function filterRelevantResults<T extends { name?: string }>(items: T[], wd: string): T[] {
+export function filterRelevantResults<T extends { name?: string; searchAliases?: string }>(items: T[], wd: string): T[] {
   const query = prepareQuery(wd);
   if (!query) return items;
-  return items.filter((item) => isRelevantPrepared(item.name || '', query));
+  return items.filter((item) => {
+    // Reject nameless records even when the upstream returns a matching alias.
+    if (!normalizeTitle(item.name || '')) return false;
+    if (isRelevantPrepared(item.name || '', query)) return true;
+    // Only search alternative *titles*, not cast, synopsis, or unrelated metadata.
+    // Split aliases so keywords in different titles cannot accidentally be combined.
+    return (item.searchAliases || '')
+      .split(/[,，、;|/]+/u)
+      .some((alias) => isRelevantPrepared(alias, query));
+  });
 }

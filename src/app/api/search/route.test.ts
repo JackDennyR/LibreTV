@@ -82,6 +82,29 @@ describe('POST /api/search', () => {
     expect(data.failures[0].error).toContain('500');
   });
 
+  it('returns BFZY-style Chinese titles when the English query matches vod_sub aliases', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(cmsList([
+      { vod_id: 39017, vod_name: '侠探杰克第一季', vod_sub: '烈探狙击,Jack Reacher', type_name: '欧美剧' },
+      { vod_id: 84598, vod_name: '侠探杰克第三季', vod_sub: '神隐任务,Jack Reacher', type_name: '欧美剧' },
+      { vod_id: 39018, vod_name: '侠探杰克：永不回头', vod_sub: 'Jack Reacher 2', type_name: '动作片' },
+      { vod_id: 136304, vod_name: '芭比之狗狗奇遇记', vod_sub: 'Barbie et ses soeurs: À la recherche des chiots' },
+      { vod_id: 9000, vod_name: '某电影', vod_actor: 'Jack Reacher' },
+    ]), { headers: { 'content-type': 'application/json' } })));
+    const body = {
+      wd: 'jack reacher',
+      sources: [{ key: 'bfzy-example', name: 'BFZY', url: 'https://cms.example.com/alias-matching' }],
+      filterAdult: true,
+    };
+    const stream = await POST(makeRequest(body, true));
+    const events = (await stream.text()).trim().split('\n').map((line) => JSON.parse(line) as SearchStreamEvent);
+    expect(events[0].list.map((item) => item.vodId).sort()).toEqual(['39017', '39018', '84598']);
+    expect(events[1].list.map((item) => item.vodId).sort()).toEqual(['39017', '39018', '84598']);
+    const cached = await POST(makeRequest(body));
+    const data = (await cached.json()) as SearchResponse;
+    expect(data.list).toHaveLength(3);
+    expect(data.list).toContainEqual(expect.objectContaining({ name: '侠探杰克第一季', searchAliases: '烈探狙击,Jack Reacher' }));
+  });
+
   it('精确命中（忽略标点差异）排在最前', async () => {
     mockUpstream();
     const res = await POST(makeRequest({ wd: '测试剧', sources: [SOURCES[0]], filterAdult: true }));
