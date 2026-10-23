@@ -40,6 +40,23 @@ describe('/api/subtitles', () => {
     expect(upstream.mock.calls[0][1].headers['Api-Key']).toBe('private-test-key');
     expect(data).not.toHaveProperty('key');
   });
+  it('accepts extensionless subtitle filenames returned by the live OpenSubtitles API', async () => {
+    process.env.OPENSUBTITLES_API_KEY = 'private-test-key';
+    upstream.mockResolvedValueOnce(new Response(JSON.stringify({ data: [
+      { attributes: { language: 'en', release: 'Jack Reacher Never Go Back 2016 HD-T', download_count: 636,
+        files: [{ file_id: 9268514, cd_number: 1, file_name: 'Jack Reacher Never Go Back 2016 HD-T' }] } },
+      { attributes: { language: 'en', release: 'Archive only', files: [{ file_id: 55, file_name: 'archive.zip' }] } },
+    ] }), { status: 200 }));
+    const response = await GET(req('/api/subtitles?title=Jack%20Reacher%202&language=en'));
+    const data = await response.json() as { configured: boolean; items: { fileId: number; release: string }[] };
+    expect(response.status).toBe(200);
+    expect(data.configured).toBe(true);
+    expect(data.items).toEqual([expect.objectContaining({
+      fileId: 9268514,
+      release: 'Jack Reacher Never Go Back 2016 HD-T',
+    })]);
+  });
+
   it('downloads and converts an SRT without exposing upstream download URL', async () => {
     process.env.OPENSUBTITLES_API_KEY = 'private-test-key';
     upstream.mockResolvedValueOnce(new Response(JSON.stringify({ link: 'https://download.opensubtitles.com/film.srt' })));
@@ -51,6 +68,17 @@ describe('/api/subtitles', () => {
     expect(data.vtt).toContain('مرحبا');
     expect(upstream).toHaveBeenCalledTimes(2);
   });
+  it('shows a clear message when the provider authorizes a download but its file host blocks access', async () => {
+    process.env.OPENSUBTITLES_API_KEY = 'private-test-key';
+    upstream.mockResolvedValueOnce(new Response(JSON.stringify({ link: 'https://www.opensubtitles.com/download/test.srt' })));
+    upstream.mockResolvedValueOnce(new Response('Access denied', { status: 403 }));
+    const response = await POST(req('/api/subtitles', 'POST', { fileId: 9268514 }));
+    const body = await response.json() as { error: string };
+    expect(response.status).toBe(502);
+    expect(body.error).toMatch(/blocked this subtitle download.*403/);
+    expect(upstream).toHaveBeenCalledTimes(2);
+  });
+
   it('blocks external download hosts and invalid IDs', async () => {
     process.env.OPENSUBTITLES_API_KEY = 'private-test-key';
     const invalid = await POST(req('/api/subtitles', 'POST', { fileId: '42' }));
