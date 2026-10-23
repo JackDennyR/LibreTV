@@ -31,6 +31,14 @@ describe('parseSearchList', () => {
     expect(items[1].vodId).toBe('abc-1');
   });
 
+  it('captures alternative movie titles for English searches without overwriting Chinese titles', () => {
+    const [item] = parseSearchList({
+      list: [{ vod_id: 39017, vod_name: '侠探杰克第一季', vod_sub: '游侠杰克,Jack Reacher' }],
+    }, source);
+    expect(item.name).toBe('侠探杰克第一季');
+    expect(item.searchAliases).toBe('游侠杰克,Jack Reacher');
+  });
+
   it('对缺失字段健壮', () => {
     const items = parseSearchList({ list: [{}] }, source);
     expect(items[0].vodId).toBe('');
@@ -236,6 +244,26 @@ describe('filterRelevantResults', () => {
     const out = filterRelevantResults(items, wd);
     expect(out).toHaveLength(2);
     expect(out.map((i) => i.name)).toEqual(['摔跤吧！爸爸', '摔跤吧!爸爸【影视解说】']);
+  });
+
+  it('matches English provider title aliases without returning unrelated Chinese titles', () => {
+    const titles = [
+      { name: '侠探杰克第一季', searchAliases: '神隐任务,Jack Reacher' },
+      { name: '侠探杰克第三季', searchAliases: '游侠杰克,Jack Reacher' },
+      { name: '芭比之狗狗奇遇记', searchAliases: 'Barbie et ses soeurs: À la recherche des chiots' },
+      { name: '幸运星1929' },
+      { name: '', searchAliases: 'Jack Reacher' },
+    ];
+    expect(filterRelevantResults(titles, 'jack reacher').map((x) => x.name))
+      .toEqual(['侠探杰克第一季', '侠探杰克第三季']);
+    expect(filterRelevantResults(titles, 'reacher').map((x) => x.name))
+      .toEqual(['侠探杰克第一季', '侠探杰克第三季']);
+  });
+
+  it('does not combine keywords across unrelated alternate titles', () => {
+    expect(filterRelevantResults([
+      { name: '无关电影', searchAliases: 'Jack,Reacherless' },
+    ], 'Jack Reacher')).toEqual([]);
   });
 
   it('全部不相关时返回空列表，不能把源站的默认目录当成搜索结果', () => {
